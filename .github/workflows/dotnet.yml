@@ -31,4 +31,4 @@ jobs:
     - name: Remove docker
       run: docker rm -f demo-docker || true 
     - name: Run
-      run: docker run -it --rm --detach --name demo-docker -p 5010:80 my-awesome-container-app:1.0.0
+      run: docker run -it --rm --detach --name demo-docker -p 5010:443 my-awesome-container-app:1.0.0
