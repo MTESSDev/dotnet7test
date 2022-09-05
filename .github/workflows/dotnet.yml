@@ -28,5 +28,7 @@ jobs:
       run: dotnet test --no-build --verbosity normal
     - name: Publish
       run: dotnet publish --os linux --arch x64 -p:PublishProfile=DefaultContainer
+    - name: Remove docker
+      run: docker rm demo-docker
     - name: Run
-      run: docker run -it --rm --detach -p 5010:80 my-awesome-container-app:1.0.0
+      run: docker run -it --rm --detach --name demo-docker -p 5010:80 my-awesome-container-app:1.0.0
