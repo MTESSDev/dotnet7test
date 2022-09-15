@@ -10,7 +10,7 @@ jobs:
   build:
     defaults:
       run:
-        working-directory: Sources/FRW.PR
+        working-directory: Sources
 
     runs-on: self-hosted
 
@@ -21,13 +21,13 @@ jobs:
       with:
         dotnet-version: 7.0.100-preview.7.22377.5
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore ./FRW.PR/FRW.PR.Extranet.csproj
     - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet build --no-restore ./FRW.PR/FRW.PR.Extranet.csproj
+   # - name: Test
+    #  run: dotnet test --no-build --verbosity normal ./FRW.PR/FRW.PR.Extranet.csproj
     - name: Publish
-      run: dotnet publish --os linux --arch x64 -p:PublishProfile=DefaultContainer
+      run: dotnet publish --os linux --arch x64 -p:PublishProfile=DefaultContainer ./FRW.PR/FRW.PR.Extranet.csproj
     - name: Remove docker
       run: docker rm -f demo-docker || true 
     - name: Run
