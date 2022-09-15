@@ -10,7 +10,7 @@ jobs:
   build:
     defaults:
       run:
-        working-directory: Sources\FRW.PR
+        working-directory: Sources/FRW.PR
 
     runs-on: self-hosted
 
