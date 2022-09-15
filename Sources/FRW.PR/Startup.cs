@@ -71,7 +71,7 @@ namespace FRW.PR.Extra
             services.AddDataProtection(options => options.ApplicationDiscriminator = "FRW")
                     .AddKeyManagementOptions(options =>
                     {
-                        options.XmlRepository = new ApiXmlRepository(Configuration);
+                        //options.XmlRepository = new ApiXmlRepository(Configuration);
                         options.NewKeyLifetime = TimeSpan.FromDays(90);
                     });
 
@@ -121,7 +121,7 @@ namespace FRW.PR.Extra
                         Title = "FRW.PR.Extra",
                         Version = "v1",
                         Description = "Service PR FRW.",
-                        Contact = new OpenApiContact() { Name = "Équipe DTN" }
+                        Contact = new OpenApiContact() { Name = "ï¿½quipe DTN" }
                     });
 
                     // Set the comments path for the Swagger JSON and UI.
@@ -137,7 +137,7 @@ namespace FRW.PR.Extra
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            // Actions spécifiques pour le developpement/prod
+            // Actions spï¿½cifiques pour le developpement/prod
             if (!Configuration.GetValue<bool>("estProduction"))
                 app.UseDevcfgMiddleware();
             else
@@ -191,7 +191,7 @@ namespace FRW.PR.Extra
 
             if (!Configuration.GetValue<bool>("estProduction"))
             {
-                // Générateur Swagger
+                // Gï¿½nï¿½rateur Swagger
                 app.UseSwagger(e => e.SerializeAsV2 = true);
 
                 // Swagger-ui (HTML, JS, CSS, etc.), 
