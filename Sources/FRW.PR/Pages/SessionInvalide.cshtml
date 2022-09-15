@@ -1,0 +1,24 @@
+﻿@page "{SystemeAutorise:int?}/{id?}/{version?}/{ShortInstance?}"
+@model FRW.PR.Extra.Pages.Form.SessionInvalideModel
+@{
+    ViewData["Title"] = Localizer["sessionInvalide.titrePage"];
+    
+    Layout = "_Layout2Colonnes";
+}
+
+@section colonneGauche{
+    <utd-avis type="avertissement">
+        <div slot="contenu">
+            @Localizer["sessionInvalide.corpsMessageAvertissement"]
+        </div>
+    </utd-avis>    
+}
+
+@section scripts
+{
+    <script>
+        function effectuerDeconnexion() {
+            window.location.href = '@CultureInfoExtensions.LangueUrl/deconnexion/@Model.SystemeAutorise/@Model.TypeFormulaire/@(Model.Version ?? "0")/@Model.ShortInstance/'
+        }
+    </script>
+}

@@ -1,0 +1,10 @@
+﻿@page "{handler?}"
+
+@model PageIntrouvableModel
+@{
+    ViewData["Title"] = Localizer["pages.pageIntrouvable.titre"];   
+}
+
+<div class="page-texte">
+    @Localizer["pages.pageIntrouvable.contenu"] @Request.Query["ReturnUrl"]
+</div>

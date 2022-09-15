@@ -1,0 +1,411 @@
+﻿@using Microsoft.Extensions.Configuration;
+@using FRW.PR.Extra.Extensions;
+
+@inject IConfiguration settings
+
+@{
+
+    //Nom du service à afficher en entête
+    ViewData["nom-service-entete"] = ViewData["nom-service-entete"] ?? "";
+
+    //Ces éléments de ViewData permettent de modifier la couleur de fond des différentes zones de la section de contenu principal (main)
+    ViewData["classe-fond-section-entete"] = ViewData["classe-fond-section-entete"] ?? "fond-blanc";
+    ViewData["classe-fond-section-contenu1"] = ViewData["classe-fond-section-contenu1"] ?? "fond-blanc";
+    ViewData["classe-fond-section-2colonnes"] = ViewData["classe-fond-section-2colonnes"] ?? "fond-blanc";
+    ViewData["classe-fond-section-contenu2"] = ViewData["classe-fond-section-contenu2"] ?? "fond-blanc";
+    var afficherBlocCode = (bool?)ViewData["AfficherBlocCode"]  ?? false;
+    var couleurFondEnteteIdentiqueContenu1 = ViewData["classe-fond-section-entete"] == ViewData["classe-fond-section-contenu1"];
+    var h1HorsEcran = ((bool?)ViewData["H1HorsEcran"]).GetValueOrDefault();
+    var h1NonRendu = ((bool?)ViewData["H1NonRendu"]).GetValueOrDefault();
+    var cacherPIV = ((bool?)ViewData["CacherPIV"]).GetValueOrDefault();
+    var desactiverGoogleAnalytics = ((bool?)ViewData["DesactiverGoogleAnalytics"]).GetValueOrDefault();
+    var afficherNomFormulaire = ((bool?)ViewData["AfficherNomFormulaire"]).GetValueOrDefault();
+    var afficherSelecteurLangue = (bool?)ViewData["AfficherSelecteurLangue"] ?? true;
+    // Masquer le premier espaceur de la zone contenu1 si la zone d'entête n'est pas vide et que sa couleur de fond est identique à celle de la section de contenu 1.
+    var zoneEnteteVide = h1NonRendu;
+    var masquerPremierEspaceurContenu1 = !zoneEnteteVide && couleurFondEnteteIdentiqueContenu1;
+    var masquerPremierEspaceurConteneurColonnes = ((bool?)ViewData["masquerPremierEspaceurConteneurColonnes"]).GetValueOrDefault();
+    var fureteurDesuet = ((bool?)ViewData["FureteurDesuet"]).GetValueOrDefault();
+
+    var textesEditesQuery = (TexteEditeQuery?)ViewData.FirstOrDefault(e => e.Key.Equals("textesEditesQuery")).Value;
+
+    var routeData = new Dictionary<string, string>();
+
+    //Sert à retourner dans la même page dans la langue alternative.
+    foreach (var r in ViewContext.RouteData.Values)
+    {
+        routeData.Add(r.Key, r.Value.ToString() ?? string.Empty);
+    }
+
+    //Ajout des paramètres dans le query string
+    foreach (var r in Context.Request.Query)
+    {
+        routeData.TryAdd(r.Key, r.Value.ToString() ?? string.Empty);
+    }
+}
+<!DOCTYPE html>
+<html lang="@CultureInfoExtensions.LangueUtilisateur">
+<!-- Modifier en fonction de la langue -->
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="apple-touch-icon" sizes="180x180" href="~/images/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/images/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="~/images/favicons/favicon-16x16.png">
+    <link rel="mask-icon" href="~/images/favicons/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="theme-color" content="#fff" />
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+    <title>@(await Config.ObtenirValeur("title"))</title>
+
+
+    @* Charger le polyfill pour le support des variables css uniquement si requis. *@
+    <script>
+        if (!window.CSS || !CSS.supports('color', 'var(--fake-var)')) {
+
+            var head = document.getElementsByTagName('head')[0];
+            var script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = '/js/supportCssVars.min.js';
+            head.appendChild(script);
+        }
+    </script>
+
+    @*Ressources à charger en priorité (on charge les fonts dans le but d'éviter les flicks *@
+    <link rel="preload" as="font" href="~/fonts/open-sans-v18-latin-regular.woff" type="font/woff" crossorigin="anonymous">
+    <link rel="preload" as="font" href="~/fonts/open-sans-v18-latin-600.woff" type="font/woff" crossorigin="anonymous">
+    <link rel="preload" as="font" href="~/fonts/open-sans-v18-latin-700.woff" type="font/woff" crossorigin="anonymous">
+    <link rel="preload" as="font" href="~/fonts/roboto-v20-latin-500.woff" type="font/woff" crossorigin="anonymous">
+    <link rel="preload" as="font" href="~/fonts/roboto-v20-latin-700.woff" type="font/woff" crossorigin="anonymous">
+
+    @*Ressources moins importantes (on laisse la mécanique de chargement native du fureteur décider l'ordre de chargement normalement dans l'ordre d'inclusion)*@
+    <link rel="stylesheet" href="~/css/bootstrap.min.css" data-include asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/utd-webcomponents.min.css" data-include asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/base.min.css" data-include asp-append-version="true" />
+    <link rel="stylesheet" href="~/Sprite?v=@settings["InfosVersion:BuildId"]" />
+
+    @if (afficherBlocCode)
+    {
+        <link rel="stylesheet" href="~/css/blocCode.min.css" data-include asp-append-version="true" />
+    }
+
+    @*Ressources non importantes dont le chargement est effectué en différé (après que la page soit chargée)*@
+    <link rel="stylesheet" href="~/css/impression.css" media="print" data-include asp-append-version="true" onload="this.media='all' ">
+
+    <link rel="stylesheet" href="~/css/site.css" data-include asp-append-version="true" />
+    @RenderSection("style", required: false)
+</head>
+<body>
+    <div id="frw">
+        <div class="conteneur-principal">
+            @if (!cacherPIV)
+            {
+                <header role="banner">
+                    <div style="position: absolute; width: 100%;">
+                        <div class="d-flex flex-column align-items-center">
+                            <a href="#main" class="passer-contenu">Passer au contenu </a>
+                        </div>
+                    </div>
+                    <partial name="_JavascriptDesactive" />
+                    <img id="pivLogoGouvernementPrint" alt="@Localizer["layout.altLogoQuebec"]" src="@ViewContext.HttpContext.AddFileVersionToPath("/images/quebecPrint.gif")" width="199" height="60">
+                    <div class="piv piv-entete">
+                        <div class="container">
+                            <div class="d-flex justify-content-between">
+                                <div class="section-gauche d-flex align-items-center signature-gouvernement" lang="fr">
+                                    <a href="/">
+                                        <img height="72" alt="@Localizer["layout.altLogoQuebec"]" src="@ViewContext.HttpContext.AddFileVersionToPath("/images/QUEBEC_blanc.svg")">
+                                    </a>
+                                </div>
+                                <div class="section-centre d-none d-md-flex align-items-center">
+                                    <div class="titre-site">
+                                        <a class="d-flex flex-column" href="/">
+                                            <span>@(await Config.ObtenirValeur("piv.entete.nomSiteMOLigne1"))</span>
+                                            <span class="description">@(await Config.ObtenirValeur("piv.entete.nomSiteMOLigne2"))</span>
+                                        </a>
+                                    </div>
+                                </div>
+
+
+                                <div class="section-droite d-flex justify-content-end">
+                                    <ul class="d-flex flex-column justify-content-center">
+                                        @{
+                                            var labelLangue = "Français";
+
+                                            if (CultureInfoExtensions.EstSiteFrancais)
+                                            {
+                                                routeData["culture"] = "en";
+                                                labelLangue = "English";
+
+                                            }
+                                            else
+                                            {
+                                                routeData["culture"] = "fr";
+                                            }
+                                        }
+                                        @if (afficherSelecteurLangue)
+                                        {
+                                            <li>
+                                                <a asp-all-route-data="@routeData" id="changementLangue">
+                                                    @labelLangue
+                                                </a>
+                                            </li>
+                                        }
+
+
+
+                                            @if(await Config.ObtenirValeur<bool>("piv.nousJoindre.actif"))
+                                            {
+                                                <li>                                                
+                                                    <a href="@(await Config.ObtenirValeur("piv.nousJoindre.urlLien"))" target="_blank">
+                                                        @(await Config.ObtenirValeur("piv.nousJoindre.texte"))
+                                                        <span class="utd-sr-only">@Localizer["layout.srOuvertureLienNouvelleFenetre"]</span>
+                                                    </a>
+                                                </li>                                                                                
+                                            }
+                                    </ul>
+                                </div>
+
+                            </div>
+                            <div class="titre-site d-flex flex-column d-md-none pb-2">
+                                <span>@(await Config.ObtenirValeur("piv.entete.nomSiteMOLigne1"))</span>
+                                <span class="description">@(await Config.ObtenirValeur("piv.entete.nomSiteMOLigne2"))</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="conteneur-menu-identification">
+                        <div class="container zone-menu-identification d-flex">
+                            <div class="zone-identification d-flex align-items-center ml-auto">
+                                <div class="conteneur-btn-fermer-session">
+                                    <button v-cloak type="button" class="btn-fermer-session btn btn-sm btn-outline-light" id="btnDeconnexion" v-on:click="effectuerDeconnexion()">@Localizer["boutons.deconnexion"]</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="container zone-menu-principal d-flex d-md-none">
+                        </div>
+                    </div>
+
+                </header>
+            }
+
+            <main id="main">
+                <div class="conteneur-entete @ViewData["classe-fond-section-entete"] @(h1HorsEcran ? "h1-hors-ecran" : "") @(h1NonRendu ? "h1-non-rendu" : "")">
+                    <div class="container">
+                        <div class="espaceur-conteneurs"></div>
+                        @{
+                            var strTitre = "messages.maintenance.titre";
+                            var strCorps = "messages.maintenance.corps";
+                            var corps = Localizer[strCorps];
+                            if (!string.IsNullOrEmpty(corps.Value) && corps.Value != strCorps)
+                            {
+                                <utd-avis type="avertissement" titre="@Localizer[strTitre]">
+                                    <div slot="contenu">
+                                        @Localizer[strCorps]
+                                    </div>
+                                </utd-avis>    
+                            }
+                        }
+
+                        @if (!h1NonRendu)
+                        {
+                            @if (afficherNomFormulaire)
+                            {
+                                <h1 class="@(h1HorsEcran ? "sr-only" : "")" v-cloak>
+                                    {{title}}
+                                </h1>
+                            }
+                            else
+                            {
+                                <h1 class="@(h1HorsEcran ? "sr-only" : "")">
+                                    @ViewData["title"]
+                                </h1>
+                            }
+                        }
+
+                        <div class="espaceur-conteneurs"></div>
+                    </div>
+                </div>
+                <div class="conteneur-contenu1 conteneur-sans-colonne @ViewData["classe-fond-section-contenu1"]">
+                    <div class="container">
+                        <div class="espaceur-conteneurs  @(masquerPremierEspaceurContenu1 ? "d-none" : "")"></div>
+                        @RenderBody()
+                        <div class="espaceur-conteneurs"></div>
+                    </div>
+                </div>
+
+                <div class="conteneur-colonnes @ViewData["classe-fond-section-2colonnes"]">
+                    <div class="container">
+                        <div class="espaceur-conteneurs"></div>
+                        @RenderSection("colonneGauche", required: false)
+                        @RenderSection("colonneDroite", required: false)
+                        <div class="espaceur-conteneurs"></div>
+                    </div>
+                </div>
+
+
+                <div class="conteneur-contenu2 conteneur-sans-colonne @ViewData["classe-fond-section-contenu2"]">
+                    <div class="container">
+                        <div class="espaceur-conteneurs"></div>
+                        @RenderSection("contenuSection2", required: false)
+                        <div class="espaceur-conteneurs"></div>
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- Zone de notifications lecteur écran seulement -->
+            <div id="zoneNotificationsLecteurEcran" aria-live="polite" class="sr-only">
+            </div>
+            <utd-hautpage></utd-hautpage>
+        </div>
+
+        @if (!cacherPIV)
+        {
+            <footer class="piv-bas-page footer">
+                <h2 id="titreMenuPiedPage" class="sr-only">@Localizer["layout.srMenuPiedPage"]</h2>
+                <nav aria-labelledby="titreMenuPiedPage">
+                    <section class="liens">
+                        <ul class="list-inline d-flex flex-wrap mx-auto justify-content-center">
+                            <li class="list-inline-item"><a href="@CultureInfoExtensions.LangueUrl/accessibilite" target="_blank">@Localizer["layout.texteLienAccessibilite"]<span class="sr-only">@Localizer["layout.srOuvertureLienNouvelleFenetre"]</span></a></li>
+                        </ul>
+                    </section>
+                </nav>
+
+                <div class="container">
+                    <div class="row no-gutters">
+                        <div class="col-12 d-flex align-items-center justify-content-center" lang="fr">
+                            <a href="@(await Config.ObtenirValeur("piv.piedPage.logo.urlLien"))" target="_blank" rel="noopener">
+                                <img id="logoFooter" alt="@(await Config.ObtenirValeur("piv.piedPage.logo.alt"))@Localizer["layout.srOuvertureLienNouvelleFenetre"]" src="@(await Config.ObtenirValeur("piv.piedPage.logo.base64"))" width="@(await Config.ObtenirValeur("piv.piedPage.logo.width"))" height="@(await Config.ObtenirValeur("piv.piedPage.logo.height"))">
+                            </a>
+                        </div>
+                        <div class="col-12 d-flex align-items-center justify-content-center utd-text-xs">
+                            <p>
+                                <a href="@Localizer["layout.urlLienCopyright"]" target="_blank" rel="noopener">
+                                    @Localizer["layout.texteCopyright"]
+                                    <span class="sr-only">@Localizer["layout.srOuvertureLienNouvelleFenetre"]</span>
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        }
+    </div>
+
+    <script>
+        @*Vérifier si le fureteur est désuet avant de charger les scripts*@
+        if (estFureteurDesuet()) {
+            if (window.location.href.indexOf('FureteurDesuet') === -1) {
+                window.location.replace('@Url.Page("/FureteurDesuet")');
+            }
+        }
+
+        function estFureteurDesuet() {
+            try {
+                var fureteurDesuet = sessionStorage.getItem('fureteurDesuet');
+                if (fureteurDesuet === null) {
+                    fureteurDesuet = (!estSpreadSupporte() || !estPromiseFinallySupporte() || !estChampDateSupporte()).toString();
+
+                    sessionStorage.setItem('fureteurDesuet', fureteurDesuet);
+                }
+                return fureteurDesuet === 'true';
+            }
+            catch (err) {
+                return true;
+            }
+        };
+
+        function estSpreadSupporte() {
+            try {
+
+                new Function('var objet = {}; var test = { ...objet };');
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function estPromiseFinallySupporte() {
+            try {
+                new Function('var promise = new Promise(function (x, y) { }).finally(function () { });');
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function estChampDateSupporte() {
+            var input = document.createElement('input');
+            input.setAttribute('type','date');
+
+            var pasUneValeurDate = 'pas-une-date';
+            input.setAttribute('value', pasUneValeurDate); 
+
+            return (input.value !== pasUneValeurDate);
+        }
+
+    </script>
+
+    @if (!fureteurDesuet)
+    {
+        <script src="~/js/base.min.js" asp-append-version="true"></script>
+
+        <script src="~/js/site.js" asp-append-version="true"></script>
+
+        <script src="~/js/baseAsync.min.js" asp-append-version="true"></script>
+
+        @if (afficherBlocCode)
+        {
+            <script src="~/js/blocCode.min.js" asp-append-version="true"></script>
+        }
+
+
+        var fichierI18n = $"/api/Textes/Obtenir/{CultureInfoExtensions.LangueUtilisateur}";
+
+        @if (textesEditesQuery is { })
+        {
+            fichierI18n += "/" + textesEditesQuery.SystemeAutorise + "/" + textesEditesQuery.TypeFormulaire + "/" + (textesEditesQuery.Version ?? "0") + "/";
+        }
+
+        <script src="@fichierI18n"></script>
+    }
+
+    @RenderSection("Scripts", required: false)
+
+    @if (!desactiverGoogleAnalytics)
+    {
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=@settings["GoogleAnalytics:ID"]"></script>
+
+        <script>
+            // Chargement des scripts de Google Analytics et traçage de l'affichage de la page
+            // Utilisation de js pur au cas où le fureteur serait désuet
+            window.dataLayer = window.dataLayer || [];
+            function gtag() { dataLayer.push(arguments); }
+            window.addEventListener("load", function () {
+            @{
+                // Permet de forcer dans une page des filtres google analytics spécifiques
+                ViewData.TryGetValue("gestionGoogleAnalyticSpecifique", out var outGestionGoogleAnalyticSpecifique);
+                string gestionGoogleAnalyticSpecifique = (outGestionGoogleAnalyticSpecifique?.ToString() ?? "");
+            }
+
+                gestionGoogleAnalytics('@settings["GoogleAnalytics:ID"]', '@gestionGoogleAnalyticSpecifique');
+            });
+
+            /*======================================================================================================================*/
+            /* Google analytics
+                * ga('send', 'event', [eventCategory], [eventAction], [eventLabel], [eventValue], [fieldsObject]);
+            /*======================================================================================================================*/
+            function gestionGoogleAnalytics(idGoogleAnalytics, ajouterGestionGoogleAnalyticSpecifique) {
+                gtag('js', new Date());
+                gtag('config', idGoogleAnalytics, { 'anonymize_ip': true });
+            };
+
+        </script>
+    }
+</body>
+</html>
+
+

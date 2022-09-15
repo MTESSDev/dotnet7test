@@ -1,0 +1,24 @@
+﻿@page
+@model ErrorModel
+@{
+    ViewData["Title"] = Localizer["pages.erreur.titre"];
+    Layout = "_Layout2Colonnes";
+}
+
+@section colonneGauche
+{
+    <div class="contenu zone-html">
+        <div class="texte">
+            @Localizer["pages.erreur.contenu"]
+            <p>
+                Date: <code>@DateTime.Now</code>
+            </p>
+            @if (Model.ShowRequestId)
+            {
+                <p>
+                    <strong>@Localizer["pages.erreur.libelles.requestId"]</strong> <code>@Model.RequestId</code>
+                </p>
+            }
+        </div>
+    </div>
+}

@@ -1,0 +1,200 @@
+﻿@page "{SystemeAutorise:int?}"
+@model IndexModel
+@{
+    ViewData["Title"] = "FRW";
+}
+
+@section style{
+<link rel="stylesheet" href="~/css/additionnel.min.css" asp-append-version="true">
+<style>
+    .liste-forms {
+        display: flex;
+        list-style: none;
+        padding: 0;
+    }
+
+    .liste-swagger > li {
+        margin-top: 16px;
+    }
+</style>
+}
+
+
+<ul class="liste-forms">
+    <li>
+        <button class="@(Model.SystemeAutorise == 1 ? "utd-btn primaire mr-3" : "utd-btn secondaire mr-3")" onclick="redirectTo(1)">Formulaires ECS</button>
+        <button class="@(Model.SystemeAutorise == 750 ? "utd-btn primaire" : "utd-btn secondaire")" onclick="redirectTo(750)">Formulaires P750</button>
+    </li>
+</ul>
+
+
+<h2>Choisir un formulaire</h2>
+
+
+<div role="group">
+    <form action="">
+        <div class="form-group">
+            <select id="selectFormulaire" asp-for="@Model.FormListItems" asp-items="@Model.FormListItems" ))" size='10' class="custom-select"></select>
+            <span asp-validation-for="@Model.FormListItems" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label for="jsonFormulaire">Données en entrée</label>
+            <textarea id="jsonFormulaire" class="form-control" type="text" rows="5" placeholder="Mettez votre json ici au besoin"></textarea>
+        </div>
+        <div class="form-group">
+            <input id="checkDebugFormulaire" name="checkDebugFormulaire" type="checkbox" />
+            <label for="checkDebugFormulaire">Démarrer en mode débug</label>
+        </div>
+        <button id="btnOuvrirForm" onclick="ouvrirFormulaire();" class="utd-btn secondaire">Ouvrir le formulaire</button>
+    </form>
+</div>
+
+<h2>Swagger</h2>
+<ul class="liste-swagger">
+    <li><a href="~/swagger" target="_blank">Swagger PR (SIS)</a></li>
+</ul>
+
+<h2>Afficher le contenu du formulaire</h2>
+
+<div class="form-group">
+    <label for="idFormulaire">FW_NS_FORM_WEB</label>
+    <div class="d-flex">
+        <input id="idFormulaire" asp-for="@Model.IdFormulaire" type="text" class="form-control md mr-3" />
+        <button id="btnEnregistrer" onclick="obtenirContenu();" class="utd-btn secondaire compact">Afficher</button>
+    </div>
+</div>
+
+<div class="form-group d-none" id="contenuFormulaire">
+    <span class="libelle">FW_DE_CONT_FORM_WEB</span>
+    <pre id="contenuForm"></pre>
+</div>
+
+
+<h2>Convertir GUID session en shortGUID</h2>
+
+<div class="form-group">
+    <label for="noPublicSession">GUID</label>
+    <div class="d-flex">
+        <input id="noPublicSession" asp-for="@Model.NoPublicSession" type="text" class="form-control lg mr-3" />
+        <button id="btnConvertionNoSession" onclick="obtenirConversionNoSession();" class="utd-btn secondaire compact">Convertir</button>
+    </div>
+
+</div>
+<div class="form-group d-none" id="conteneurNoPublicSession">
+    <label>ShortGuid</label>
+    <pre id="noPublicSessionConverti"></pre>
+</div>
+
+
+@section scripts{
+<script src="~/js/additionnel.min.js" asp-append-version="true"></script>
+<script>
+
+    $(function() {
+        var data = localStorage.getItem("checkDebugFormulaire" + @Model.SystemeAutorise);
+        if (data !== null) {
+            $("input[id='checkDebugFormulaire']").attr("checked", "checked");
+        }
+        data = localStorage.getItem("selectFormulaire" + @Model.SystemeAutorise);
+        if (data !== null) {
+            $("select[id='selectFormulaire']").val(data);
+        }
+        data = localStorage.getItem("jsonFormulaire" + @Model.SystemeAutorise);
+        if (data !== null) {
+            $("textarea[id='jsonFormulaire']").val(data);
+        }
+    });
+
+    $("input[id='checkDebugFormulaire']").click(function() {
+        if ($(this).is(":checked")) {
+            localStorage.setItem("checkDebugFormulaire" + @Model.SystemeAutorise, $(this).val());
+        } else {
+            localStorage.removeItem("checkDebugFormulaire" + @Model.SystemeAutorise);
+        }
+    });
+
+    $("select[id='selectFormulaire']").change(function() {
+         localStorage.setItem("selectFormulaire" + @Model.SystemeAutorise, $(this).val());
+    });
+    $("textarea[id='jsonFormulaire']").change(function() {
+         localStorage.setItem("jsonFormulaire" + @Model.SystemeAutorise, $(this).val());
+    });
+
+    function ouvrirFormulaire() {
+        event.preventDefault()
+
+        var debug = $("input[id='checkDebugFormulaire']").is(":checked");
+
+        const choixFormulaire = document.getElementById('selectFormulaire').value
+        const json = document.getElementById('jsonFormulaire').value
+
+        if (json && json !== '') {
+            const parametres = {
+                idSystemeAutorise: @Model.SystemeAutorise,
+                typeFormulaire: choixFormulaire,
+                identifiantUtilisateur: 'TestUtil',
+                jsonData: json
+            }
+
+            executerRequeteAjax("@Url.Page("Index", "CreerFormulaireIndividu")", parametres)
+                .done(function(retour){
+                    window.location.href = '/Reprise?no=' + retour.noPublicSession + (debug?"&debug=true":"")
+                })
+                .fail(function () {
+                    document.getElementById('jsonFormulaire').value = "Erreur lors de la création du formulaire"
+                })
+        }
+        else {
+            window.location.href = '/Form/@Model.SystemeAutorise/' + choixFormulaire + (debug?"?debug=true":"")
+        }
+    }
+
+    function obtenirContenu() {
+
+        const parametres = {
+            idFormulaire: document.getElementById("idFormulaire").value
+        };
+
+        const contenuForm = document.getElementById("contenuFormulaire")
+        contenuForm.classList.remove("d-none")
+
+        document.getElementById("contenuForm").innerHTML = "";
+        executerRequeteAjax("@Url.Page("Index", "AfficherContenuFormulaire")", parametres)
+            .done(function (retour) {
+                const options = { quoteKeys: true }
+                var data = JSON.parse(retour)
+                document.getElementById("contenuForm").innerHTML = prettyPrintJson.toHtml(data, options)
+
+                })
+            .fail(function () {
+                document.getElementById("contenuForm").innerHTML = "<b><font color='red'>ERREUR</font></b>"
+            })
+    };
+
+    function obtenirConversionNoSession() {
+
+        const parametres = {
+            noPublicSession: document.getElementById("noPublicSession").value
+        };
+
+        const conteneurNoPublicSession = document.getElementById("conteneurNoPublicSession")
+        conteneurNoPublicSession.classList.remove("d-none")
+
+        document.getElementById("noPublicSessionConverti").innerHTML = "";
+        executerRequeteAjax("@Url.Page("Index", "ConvertirNoSession")", parametres)
+            .done(function (retour) {
+                console.log(retour)
+                document.getElementById("noPublicSessionConverti").innerHTML = retour;
+
+                })
+            .fail(function () {
+                document.getElementById("noPublicSessionConverti").innerHTML = "<b><font color='red'>ERREUR</font></b>";
+            })
+    };
+
+    function redirectTo (id) {
+          window.location.href =  "/" + id;
+    };
+</script>
+}
+

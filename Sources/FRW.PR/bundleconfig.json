@@ -1,0 +1,188 @@
+[
+  {
+    "outputFileName": "wwwroot/css/utd-webcomponents.min.css",
+    "inputFiles": [
+      "src/externe/utd/utd-webcomponents.min.css"
+    ],
+    "minify": {
+      "enabled": false,
+      "adjustRelativePaths": false
+    }
+  },
+  {
+    "outputFileName": "src/temp/base.min.css",
+    "inputFiles": [
+      "src/interne/css/siteBase.css"
+    ],
+    "minify": {
+      "enabled": true,
+      "adjustRelativePaths": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/css/base.min.css",
+    "inputFiles": [
+      "src/temp/base.min.css"
+    ],
+    "minify": {
+      "enabled": false,
+      "adjustRelativePaths": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/css/additionnel.min.css",
+    "inputFiles": [
+      "src/externe/select2/select2.min.css",
+      "src/externe/select2/select2-bootstrap4.min.css",
+      "src/externe/pretty-print-json/pretty-print-json.css"
+    ],
+    "minify": {
+      "enabled": false,
+      "adjustRelativePaths": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/css/blocCode.min.css",
+    "inputFiles": [
+      "src/externe/highlightJS/stackoverflow-dark.min.css"
+    ],
+    "minify": {
+      "enabled": false,
+      "adjustRelativePaths": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/css/bootstrap.min.css",
+    "inputFiles": [
+      "src/externe/bootstrap/bootstrap.min.css"
+    ],
+    "minify": {
+      "enabled": false,
+      "adjustRelativePaths": false
+    }
+  },
+
+  {
+    "outputFileName": "wwwroot/js/supportCssVars.min.js",
+    "inputFiles": [
+      "src/externe/CssVarsPonyfill/cssvarsponyfill.min.js",
+      "src/interne/js/supportCssVars.js"
+    ],
+    "minify": {
+      "enabled": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/js/baseAsync.min.js",
+    "inputFiles": [
+      "src/externe/bootstrap/bootstrap.bundle.min.js"
+    ],
+    "minify": {
+      "enabled": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/js/blocCode.min.js",
+    "inputFiles": [
+      "src/externe/highlightJS/highlight.min.js",
+      "src/externe/clipboard/clipboard.min.js"
+    ],
+    "minify": {
+      "enabled": false
+    }
+  },
+  {
+    "outputFileName": "src/temp/additionnel.min.js",
+    "inputFiles": [
+      "src/externe/select2/select2.js",
+      "src/externe/select2/fr.js"
+    ],
+    "minify": {
+      "enabled": true
+    }
+  },
+  {
+    "outputFileName": "wwwroot/js/additionnel.min.js",
+    "inputFiles": [
+      "src/externe/pretty-print-json/pretty-print-json.min.js",
+      "src/temp/additionnel.min.js"
+    ],
+    "minify": {
+      "enabled": false
+    }
+  },
+  {
+    "outputFileName": "src/temp/base.min.js",
+    "inputFiles": [
+      "src/interne/js/siteBase.js"
+    ],
+    "minify": {
+      "enabled": true
+    }
+  },
+  {
+    "outputFileName": "wwwroot/js/base.min.js",
+    "inputFiles": [
+      "src/externe/jQuery/jQuery.min.js",
+      "src/externe/vue/vue.min.js",
+      "src/externe/vue-i18n/vue-i18n.min.js",
+      "src/externe/vueFormulate/formulate.min.js",
+      "src/externe/vueFormulate/en.min.js",
+      "src/externe/vueFormulate/fr.min.js",
+      "src/interne/js/mtess-vue-formulate.min.js",
+      "src/externe/axios/axios.min.js",
+      "src/externe/lifecycle/lifecycle.es5.js",
+      "src/temp/base.min.js",
+      "src/externe/utd/utd-webcomponents.min.js",
+    ],
+    "minify": {
+      "enabled": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/images/sprite.svg",
+    "inputFiles": [
+      "src/sprites/dist/view/svg/sprite.view.svg"
+    ],
+    "minify": {
+      "enabled": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/images/utd-sprite.svg",
+    "inputFiles": [
+      "src/externe/utd/utd-sprite.svg"
+    ],
+    "minify": {
+      "enabled": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/scripts/pdf/pdf_viewer.js",
+    "inputFiles": [
+      "src/externe/pdfjs/js/pdf.js",
+      "src/externe/pdfjs/js/pdf_viewer.js"
+    ],
+    "minify": {
+      "enabled": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/scripts/pdf/pdf.worker.js",
+    "inputFiles": [
+      "src/externe/pdfjs/js/pdf.worker.js"
+    ],
+    "minify": {
+      "enabled": false
+    }
+  },
+  {
+    "outputFileName": "wwwroot/css/pdf/pdf_viewer.css",
+    "inputFiles": [
+      "src/externe/pdfjs/css/pdf_viewer.css"
+    ],
+    "minify": {
+      "enabled": true
+    }
+  }
+]

@@ -1,0 +1,1849 @@
+﻿@page "{SystemeAutorise:int?}/{id?}/{version?}/{instance?}"
+@model FormModel
+
+@{
+    Layout = Model.Layout ?? "_NoLayout";
+    var textesOverrideValidations = $"textesI18n.{Model.Language}.validations";
+}
+
+@{
+    ViewData["AfficherNomFormulaire"] = true;
+    ViewData["Title"] = "Formulaire";
+    ViewData["AfficherBlocCode"] = Model.AfficherBlocCode;
+    var afficherBlocCode = (bool)ViewData["AfficherBlocCode"]! ? "true" : "false";
+}
+
+@{
+    // here we do the serialization of our dictionary into JSON using Newtonsoft.Json package
+    // this object will be used in our Vue application
+
+    // over the years of web development, I've found out that the following
+    // serialization solves the problems I've encountered so far
+
+    // in a real app this would be created as a helper method somewhere
+    // if we want to exclude the c# code from our view
+    var serializationSettings = new Newtonsoft.Json.JsonSerializerSettings()
+            {
+                ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver(),
+                StringEscapeHandling = Newtonsoft.Json.StringEscapeHandling.EscapeHtml
+            };
+
+    var data =
+        Html.Raw(
+             System.Web.HttpUtility.JavaScriptStringEncode(
+                  Newtonsoft.Json.JsonConvert.SerializeObject(
+                    Model.VueData, Newtonsoft.Json.Formatting.None, serializationSettings
+                ),
+             false)
+        );
+}
+
+
+@section colonneGauche{
+<nav v-cloak :class="['etapes-form navbar navbar-expand-lg contenu-extensible', {'mode-revision' : form.EtatRevision === 'contient-erreurs'}]">
+    <a role="button" class="navbar-toggler collapsed" data-toggle="collapse" aria-controls="menuPrincipal" aria-expanded="false" href="#menuPrincipal">
+        <span class="libelle">
+            {{ $t("etapier.titre") }}
+        </span>
+        <span aria-hidden="true" class="utd-icone-svg md chevron-bleu-piv"></span>
+    </a>
+    <div class="collapse navbar-collapse" id="menuPrincipal">
+        <ul class="niv1" aria-label="Menu principal">
+            <template v-for="groupe in pagesGroup" :key="groupe.no" v-if="groupe['v-if'] === '' || eval(groupe['v-if'])">
+                <template v-if="groupe.titre">
+                    <li class="sous-menu contenu-extensible">
+                        <a class="collapsed" data-toggle="collapse" :href="'#groupe' + groupe.no" role="button" aria-expanded="false"
+                           :aria-controls="'groupe' + groupe.no"
+                           :title="obtenirTexteStatutSection(groupe)">
+                            <span :class="['groupe', {active : groupe.no === groupeCourant.no, 'contient-erreur' : estGroupeContenantErreur(groupe)}]">
+                                <span :class="[groupe.classes]">{{ groupe.titre }}</span>
+                                <span class="section-droite">
+                                    <span class="indicateur-erreur" aria-hidden="true"></span>
+                                    <span aria-hidden="true" class="utd-icone-svg md chevron-bleu-piv"></span>
+                                </span>
+                            </span>
+                        </a>
+                        <ul class="niv2 collapse" :id="'groupe' + groupe.no">
+                            <li v-for="(page, index) in obtenirPagesVisiblesGroupe(groupe)"
+                                v-on:click.stop.prevent="effectuerNavigationDecalee(page.no)" :key="page.no"
+                                :class="[{active : page.no === noPageCourante, 'contient-erreur' : page.contientErreurs, 'sans-erreur' : page.sansErreur}, page.classes ? page.classes : '' ]"
+                                :title="obtenirTexteStatutPage(page)">
+                                <span class="texte">
+                                    <a href="#" v-on:click.stop.prevent="effectuerNavigationDecalee(page.no)">
+                                        <span class="sr-only">{{index + 1}} - </span>{{ page.titre }}
+                                    </a>
+                                </span>
+                                <span class="puce">
+                                    <span class="no-etape" aria-hidden="true">{{index + 1}}</span>
+                                    <span class="utd-icone-svg sm" aria-hidden="true"></span>
+                                </span>
+                            </li>
+                        </ul>
+                    </li>
+                </template>
+                <template v-else>
+                    <li v-for="(page, index) in obtenirPagesVisiblesGroupe(groupe)" v-on:click.stop.prevent="effectuerNavigationDecalee(page.no)" :key="page.no" class="sans-regroupement" :class="[{active : page.no === noPageCourante, 'contient-erreur' : page.contientErreurs, 'sans-erreur' : page.sansErreur}, page.classes ? page.classes : '' ]">
+
+                        <span class="texte">
+                            <a href="#" v-on:click.stop.prevent="effectuerNavigationDecalee(page.no)" :title="obtenirTexteStatutPage(page)">
+                                <span class="sr-only">{{index + 1}} - </span>{{ page.titre }}
+                            </a>
+                        </span>
+                        <span class="puce">
+                            <span class="no-etape" aria-hidden="true">{{index + 1}}</span>
+                            <span class="utd-icone-svg sm" aria-hidden="true"></span>
+                        </span>
+                    </li>
+                </template>
+            </template>
+        </ul>
+    </div>
+</nav>
+}
+
+@section colonneDroite{
+<div v-cloak>
+    @if((await Config.ObtenirValeur<bool>("enregistrement.afficherMessageIncitatif")) && (await Config.ObtenirValeur<bool>("enregistrement.actif")) && !Model.EstFormulaireAuthentifie && !Model.EstCourrielRepriseEnvoyer){
+        <utd-avis id="avertissementSauvegarde" type="avertissement" titre="@Localizer["messages.incitantEnregistrement.titre"]">
+            <div slot="contenu">
+                @Localizer["messages.incitantEnregistrement.corps"]
+            </div>
+        </utd-avis>    
+    }
+    <h2 tabindex="-1" class="titre-etape-courante">
+        <span v-if="groupeCourant.titre" id="nomSectionCourante">{{groupeCourant.titre}}</span>
+        <span>{{pageCourante.titre}}</span>
+    </h2>
+    <div id="form">
+        <div class="texte-explicatif-champs-obligatoires d-flex justify-content-end" aria-hidden="true" v-if="!pageCourante.cacherTexteExplicatifChampsObligatoires">
+            <span class="icone-champ-requis" aria-hidden="true">&nbsp;*</span>
+            <span>{{ $t("validations.texteReponseObligatoire") }}</span>
+        </div>
+        <template>
+            @Html.Raw(Model.FormRaw)
+        </template>
+
+        <div class="zone-boutons bas-page" v-if="form.EtatRevision !== ''">
+            <button type="button" class="utd-btn secondaire" v-on:click="effectuerNavigationDecalee(noPagePrecedente)" :disabled="noPagePrecedente == null">{{ $t("boutons.precedent") }}</button>           
+            @if (await Config.ObtenirValeur<bool>("enregistrement.actif")) {
+                <button type="button" id="btnEnregistrer" ref="btnEnregistrer" class="utd-btn secondaire" @@click="enregistrerFormulaireDemandeParUtilisateur()">{{ $t("boutons.enregistrer") }}</button>
+            }
+            <button id="btnPageSuivante" type="button" :class="noPageSuivante != null ? 'utd-btn primaire' : 'utd-btn secondaire'" v-on:click="effectuerNavigationDecalee(noPageSuivante)" :disabled="noPageSuivante == null">{{ $t("boutons.suivant") }}</button>
+        </div>
+
+        @if (Model.AfficherInfosDebug || bool.Parse(HttpContext.Request.Headers["X-DEBUG"].FirstOrDefault() ?? "false"))
+        {
+        <div v-if="new URLSearchParams(window.location.search).get('debug')" class="infos-developpeurs mt-32">
+
+            <button class="utd-btn secondaire" v-on:click="forcerSoumettre">Forcer soumission</button>
+
+            <button class="utd-btn secondaire" v-on:click="forcerPdf">Forcer PDF</button>
+            <div id="multiEmbedPdf"></div>
+            
+            <pre class="mt-32">{{FormApplati}}</pre>
+
+        </div>
+        }
+        @if (!Model.EstProduction)
+        {
+            <div class="mt-32">
+                <p><a href="@CultureInfoExtensions.LangueUrl/form/@Model.SystemeAutorise/devcfg/">Configuration de développement</a></p>
+                <p><a href="javascript:activerDebug();">Activer le mode débug</a></p>
+            </div>
+        }
+
+    </div>
+
+
+    <utd-dialog ref="modalEnregistrement" :titre=$t("modale.enregistrement") idfocus="btnEnregistrer" @@fermeture="fermerFenetreModale">
+        <div slot="contenu">
+            <formulate-form name="formEnregistrement"
+                            id="formEnregistrement"
+                            class="no-error-summary"
+                            v-model="FormEnregistrement"
+                            @@submit="submitFormEnregistrement"
+                            @@submit-raw="submitFormEnregistrementRaw"
+                            :invalid-message="invalidMessage"
+                            :form-errors="formErrors"
+                            :keep-model-data="config.keepData"
+                            @@failed-validation="failedValidation">
+                <div class="texte-explicatif-champs-obligatoires d-flex justify-content-end" aria-hidden="true">
+                    <span class="icone-champ-requis" aria-hidden="true">&nbsp;*</span>
+                    <span>{{ $t("validations.texteReponseObligatoire") }}</span>
+                </div>
+
+                <formulate-input type="email"
+                                 autocomplete="email"
+                                 name="courrielEnregistrement"
+                                 :label=$t("courriel.libelle")
+                                 validation="bail|required:trim|email|max:100,length"
+                                 :help=$t("courriel.help")
+                                 help-position="before"
+                                 error-behavior="blur"
+                                 :input-class="['form-control']">
+                </formulate-input>
+
+                <formulate-input type="text"
+                                 name="motPasseEnregistrement"
+                                 :label=$t("motDePasse.libelle")
+                                 validation="bail|required:trim|min:5,length"
+                                 error-behavior="blur"
+                                 :help=$t("motDePasse.help")
+                                 help-position="before"
+                                 :input-class="['form-control']"
+                                 autocomplete="off">
+                </formulate-input>
+
+            </formulate-form>
+        </div>
+        <div slot="pied">
+            <button class="utd-btn secondaire compact" type="button" @@click="$refs.modalEnregistrement.setAttribute('afficher', false)">
+                {{ $t("boutons.annuler") }}
+            </button>
+            <button class="utd-btn primaire compact" type="submit" form="formEnregistrement" ref="btnEnregistrerModalEnregistrement" >
+                {{ $t("boutons.enregistrer") }}
+            </button>
+        </div>
+    </utd-dialog>
+
+    <utd-dialog ref="modalCourrielConfirmation" :titre=$t("courriel.titrePage") idFocus="btnSoumettre" @@fermeture="fermerFenetreModale">
+        <div slot="contenu">
+            <formulate-form name="formCourrielConfirmation"
+                            id="formCourrielConfirmation"
+                            class="no-error-summary"
+                            v-model="FormCourrielConfirmation"
+                            @@submit="submitFormCourrielConfirmation"
+                            @@submit-raw="submitFormCourrielConfirmationRaw"
+                            :invalid-message="invalidMessage"
+                            :form-errors="formErrors"
+                            :keep-model-data="config.keepData"
+                            @@failed-validation="failedValidation">
+
+                <div class="instructions mb-16">
+                    <p>{{ $t("courriel.confirmationLigne1") }}</p>
+                </div>
+                <formulate-input type="email"
+                                 name="courrielConfirmation"
+                                 :label=$t("courriel.libelle")
+                                 validation="bail|optional|email|max:100,length"
+                                 error-behavior="value"
+                                 :input-class="['form-control']">
+                </formulate-input>
+
+            </formulate-form>
+        </div>
+        <div slot="pied">
+            <button class="utd-btn secondaire compact" type="button" @@click="$refs.modalCourrielConfirmation.setAttribute('afficher', false)">
+                {{ $t("boutons.annuler") }}
+            </button>
+            <button class="utd-btn primaire compact" type="submit" form="formCourrielConfirmation" ref="btnPoursuivreModalCourrielConfirmation">
+                {{ $t("boutons.poursuivre") }}
+            </button>
+        </div>
+    </utd-dialog>
+</div>
+}
+
+
+@section scripts{
+
+    <script>
+    const decalageTraitementSuiteValidationsMs = 200 //Décalage traitement à la suite des validations milisecondes
+    const largeurViewportAffichageMenuMobile = 992
+    const estModeBacASable = '@Model.TypeFormulaire' === 'render'
+    let sessionValide = true
+    let estConfirmationDeconnexionParUtilisateur = false
+    let estAfficherPopUpSessionExpire = false
+    let expirationSessionUTC = @Model.ExpirationSession
+
+
+    if(!estModeBacASable) {
+        verifierInstance()
+        redirigerSiSessionInvalide()
+    }
+
+    /* Composants vue */
+    Vue.component('Label', MtessVueFormulate.Label)
+    Vue.component('ErrorList', MtessVueFormulate.ErrorList)
+    Vue.component('RepeatableRemove', MtessVueFormulate.RepeatableRemove)
+    Vue.component('Repeatable', MtessVueFormulate.Repeatable)
+    Vue.component('FormulateFile2', MtessVueFormulate.FormulateFile2)
+    Vue.component('FormulateInputFile2', MtessVueFormulate.FormulateInputFile2)
+    Vue.component('FormulateInputNombre', MtessVueFormulate.FormulateInputNombre)
+    Vue.component('FormulateInputAdresse', MtessVueFormulate.FormulateInputAdresse)
+
+
+    //Définition de notre multilingue
+    const i18n = new VueI18n({
+        locale: '@Model.Language',
+        fallbackLocale: 'fr',
+        messages: textesI18n || {}
+    })
+
+    Vue.use(
+        VueFormulate, {
+            uploader: axios.create(getHeaders()),
+            uploadUrl: '/api/v1/Document/Upload/@Model.ShortInstance',
+            downloadUrl: '/api/v1/Document/Telecharger/@Model.ShortInstance/',
+            callbackErreur : journaliserErreurJs,
+            plugins: [this.VueFormulateI18n.fr, this.VueFormulateI18nEn.en],
+            classes: {
+                error: ['text-danger', 'field-validation-error'],
+                help: ['precision']
+            },
+            library: {
+                adresse: {
+                  classification: 'text',
+                  component: 'FormulateInputAdresse',
+                  slotProps: {
+                    component: ['urlServiceAdresse', 'rechercheAvecNoCivique']
+                  }
+                },
+                customfile: {
+                    classification: 'file',
+                    component: 'FormulateInputFile2',
+                    slotProps: {
+                        component: ['tailleMaxMbParFichier', 'largeurResize', 'qualite', 'hauteurMinImage', 'largeurMinImage']
+                    }
+                },
+                nombre: {
+                    classification: 'text',
+                    component: 'FormulateInputNombre',
+                    slotProps: {
+                        component: ['nbDecimales', 'unite']
+                    }
+                }
+            },
+            slotComponents: {
+                label: 'Label',
+                errorList: 'ErrorList',
+                remove: 'RepeatableRemove',
+                repeatable: 'Repeatable',
+                file: 'FormulateFile2'
+            },
+            slotProps: {
+                label: ['tooltipTitle', 'tooltipText'],
+                repeatable: ['instanceLabel']
+            },
+            locale: '@Model.Language',
+            validationNameStrategy: ['validationName', 'label', 'name', 'type'],
+            rules: {
+                nas: ({ value }, validerValeur) => {
+                        if (value) {
+                            if (validerValeur) {
+                                if (value.match(/^9\d{8}/gm))
+                                    return true
+                                return estNAS(value)
+                            } else {
+                                const match = value.match(/\d{9}/gm)
+                            return match && match.length > 0
+                    }
+                        }
+                        return true
+                },
+                nombre: ({ value }, nbDecimales) => {
+                    if (value) {
+
+                        nbDecimales = nbDecimales || 0
+
+                        let nbSeparateurDecimales = value.match(/[,.]/gm)
+                        nbSeparateurDecimales = nbSeparateurDecimales ? nbSeparateurDecimales.length : 0
+
+                        if (nbSeparateurDecimales > 1) {
+                            return false
+                        }
+
+                        if (nbDecimales === 0) {
+                            if (nbSeparateurDecimales > 0) {
+                                return false
+                            }
+                        } else {
+                            if (nbSeparateurDecimales === 0) {
+                                return true
+                            } else {
+                                const regex = new RegExp(`^\\d*[,.]\\d{0,${nbDecimales}}$`)
+                                return regex.test(value)
+                            }
+                        }
+                    }
+                    return true
+                },
+                aucuneErreur: ({ value }) => {
+                    if (value && value.hasOwnProperty('uploadPromise')) {
+                        return value.getFiles().find( fichier => fichier.error) ? false : true
+                    }
+                    return true
+                },
+                adresseValide: ({ value }) => {
+                  if(value){
+                    if(value[0].EstValide !== undefined){
+                        // Le contrôle adresse a été affiché à l'utilisateur. Nous pouvons utiliser la valeur "EstValide" du modèle.
+                        return value[0].EstValide ? true : false
+                    } else {
+                        // Mode "pré-remplissage"
+                        // Ici nous sommes dans une situation ou le contrôle n'a jamais été affiché à l'utilisateur (ex. clic sur révision direct sans naviguer ou pré-remplissage et clic sur revision sans aller dans la page et afficher le contrôle)
+                        // Nous effectuons un minimum de validations (Champs obligatoires et format du no civique. La longueur max des champs n'est pas validée. Peut-être à mettre plus tard... mais situation exceptionnelle et on veut pe laisser cette lattitude car un autre système n'a pas les limitations de GDI)                        
+                        const champsObligatoires = ['NoCivique', 'Rue', 'Municipalite', 'Province', 'CodePostal']
+                        let valide = champsObligatoires.every((champ) => {
+                            return value[0][champ]
+                        })  
+
+                        if(valide){
+                            // On valide le format du no civique                            
+                            valide = value[0]['NoCivique'].match(/^\d[a-zA-Z0-9\s\/]*$/)                       
+                        }
+                        
+                        if(valide) {
+                            // L'adresse pré-remplie est valide. On indique qu'il s'agit d'un mode de saisie 'saisie-preremplie'. Le système appelant fera ce qu'il veut avec.
+                            // On définit également l'adresse complete.
+                            const model = value[0]
+                            const appartement = model.Appartement ? model.Appartement + '-' : ''
+                            value[0].AdresseComplete = `${appartement}${model.NoCivique}, ${model.Rue}, ${model.Municipalite}, ${model.Province}, ${model.CodePostal}`                                                      
+                            value[0].ModeSaisie = value[0].ModeSaisie || 'saisie-preremplie'
+
+                            return true
+                        } else {
+                            // L'adresse pré-remplie n'est pas valide. On réinitialise afin de retomber en mode 'recherche'.
+                            value[0].Rue = ''
+                            value[0].CodePostalRecherche = value[0].CodePostalRecherche || value[0].CodePostal                            
+                            return false                  
+                        }
+                    }
+                  } 
+                  return true
+                },
+                telephone: ({ value }) => {
+                    return !value || estTelephone(value)
+                },
+                telephoneOnzeChiffres: ({ value }) => {
+                    return !value || estTelephone(value, true)
+                },
+                codePostal: ({ value }) => {
+                    return !value || new RegExp(/^[A-Z]\d[A-Z]\s?\d[A-Z]\d$/).test(value)
+                },
+                cp12: ({ value }) => {
+                    return !value || new RegExp(/^[A-Z]{4}\d{6}[A-Z\d]\d$/).test(value)
+                },
+                nam: ({ value }) => {
+                    return !value || new RegExp(/^[A-Z]{4}\d{8}$/).test(value)
+                },
+                ///value: la valeur inscrite par l'utilisateur; date: la date maximale configurée (aujourd'hui par défaut)
+                avant: ({ value }, date) => {
+                    const valueDate = obtenirDateLocale(value, false)
+                    const dateMax = obtenirDateLocale(date, false)
+                    return valueDate <= dateMax
+                },
+                ///value: la valeur inscrite par l'utilisateur; date: la date minimale configurée (aujourd'hui par défaut)
+                apres: ({ value }, date) => {
+                    const valueDate = obtenirDateLocale(value, false)
+                    const dateMin = obtenirDateLocale(date, false)
+                    return valueDate >= dateMin
+                }
+            },
+            locales: {
+                fr: @textesOverrideValidations,
+                en: @textesOverrideValidations
+            }
+        });
+
+    Vue.use(VueI18n);
+
+    const appVue = {
+        el: '#frw',
+        i18n: i18n,
+        methods: {
+            fermerFenetreModale() {
+                setTimeout(function (formulate) {
+                    formulate.$formulate.reset('formEnregistrement')
+                    formulate.$formulate.registry.get('formEnregistrement').hasFailedSubmit = false
+                    formulate.$formulate.setValues('formEnregistrement', { courrielEnregistrement : "@Model.CourrielUtilisateur"})
+                    formulate.$formulate.reset('formCourrielConfirmation')
+                    formulate.$formulate.registry.get('formCourrielConfirmation').hasFailedSubmit = false
+                }, decalageTraitementSuiteValidationsMs, this)
+
+                this.$refs.modalEnregistrement.setAttribute('afficher', false)
+                //Un délai decalageTraitementSuiteValidationsMs est ajouté avant la réinitialisation afin que la validation (qui a été décalée de 100ms afin de corriger d'autres problèmes) soit effectuée.
+            },
+            //Enregistrement du formulaire demandé explicitement par l'utilisateur (bouton enregistrer)
+            enregistrerFormulaireDemandeParUtilisateur() {
+                if ('@Model.TypeFormulaire!.ToLower()' === 'devcfg') {
+                    this.validerFormulaire()
+                    this.Systeme.confirmation = true
+                    const d = new Date()
+                    d.setTime(d.getTime() + (365 * 24 * 60 * 60 * 1000))
+                    let expires = "expires=" + d.toUTCString()
+                    document.cookie = "FRWDEVCFG" + @Model.SystemeAutorise + "=" + encodeURIComponent(JSON.stringify(this.form)) + ";" + expires + ";path=/;secure;samesite=None";
+                } else {
+                    //TODO5 ici aussi ajouter && this.Systeme['infosEnregistrement'].motPasse car on pourrait avoir déjà le courriel maintenant mais sans mot de passe
+                    if (this.Systeme['infosEnregistrement'] || estModeBacASable) {
+                        this.enregistrerFormulaire(true,true)
+                    } else {
+                        if (@Model.EstFormulaireAuthentifie.ToString().ToLower()) {
+                            const formulate = this
+                            this.afficherMessageEnregistrementAuthentifie().then(function (resultat) {
+                                courrielUtilisateur = ""
+                                if ("@Model.CourrielUtilisateur") {
+                                    //TODO5 ici si un champ courriel de confirmation spécifié dans config on utilise sa valeur. Mais s'il est vide on fait quoi? 
+                                    //Il serait pe préférable de laisser tomber le courriel de la config dans cette situation... si authentifié pkoi avoir un courriel dans config?
+                                    courrielUtilisateur = "@Model.CourrielUtilisateur"
+                                }
+                                formulate.Systeme.infosEnregistrement = { courriel: courrielUtilisateur, courrielEnvoye: true }
+                                formulate.enregistrerFormulaire(true,true)
+                            });
+                        }
+                        else {
+                            this.$refs.modalEnregistrement.setAttribute('afficher', true)
+                        }
+                    }
+                }
+            },
+            enregistrerFormulaire(estActionUtilisateur, estMiseAJourExpiration) {
+                const systeme = { ...this.Systeme }
+
+                if (this.FormEnregistrement.courrielEnregistrement) {
+                    systeme.infosEnregistrement = systeme.infosEnregistrement || {
+                        courriel: this.FormEnregistrement.courrielEnregistrement,
+                        motPasse: this.FormEnregistrement.motPasseEnregistrement,
+                        courrielEnvoye: false,
+                    }
+                    //TODO5 si un champ courriel confirmation spécifié, le mettre à jour ici avec la valeur du courrielEnregistrement
+                    this.form.courriel = this.FormEnregistrement.courrielEnregistrement
+                }
+
+                //Ici on obtient les données "propres" du formulaire afin d'éviter les problèmes avec les fichiers, et on enregistre
+                this.$formulate.registry.get("form").getFormValues().then(donneesFormulaire => {
+                    const data = { form: donneesFormulaire, systeme: systeme }
+
+                //Particularité mode bac à sable (on enregistre dans sessionStorage, on envoie rien au serveur)
+                if(estModeBacASable && this.form){
+                    sessionStorage.setItem('donneesFormModeBacSable', JSON.stringify(this.form))
+
+                    if(estActionUtilisateur){
+                        this.afficherNotificationSuccesEnregistrementCourriel()
+                    }
+                    return
+                }
+
+                axios.post(`/api/Soumettre/MiseAJour/@Model.SystemeAutorise/@Model.TypeFormulaire/@Model.Version/@Model.ShortInstance?estActionUtilisateur=${estActionUtilisateur}&estMiseAJourExpiration=${estMiseAJourExpiration}`, data, getHeaders())
+                    .then(response => {
+                        if (estActionUtilisateur) {
+                            if(@((await Config.ObtenirValeur<bool>("enregistrement.afficherMessageIncitatif")).ToString().ToLower()) && !@Model.EstFormulaireAuthentifie.ToString().ToLower() && !@Model.EstCourrielRepriseEnvoyer.ToString().ToLower()){
+                                document.getElementById("avertissementSauvegarde").style.display = "none"
+                            }
+                            
+                            //On doit obtenir le bouton qui est à l'origine de l'enregistrement afin de compléter correctement le traitement en cours
+                            const boutonTraitementEnCours = this.$refs.modalEnregistrement.getAttribute('afficher') === 'true' ? this.$refs.btnEnregistrerModalEnregistrement : this.$refs.btnEnregistrer
+                            utd.traitementEnCours.terminer(boutonTraitementEnCours)
+
+                            this.Systeme['infosEnregistrement'] = systeme.infosEnregistrement
+
+                            if (this.Systeme.infosEnregistrement.courrielEnvoye) {
+                                if (@Model.EstFormulaireAuthentifie.ToString().ToLower()) {
+                                    this.afficherNotificationSuccesEnregistrementEspaceClient()
+                                }
+                                else {
+                                    this.afficherNotificationSuccesEnregistrement()
+                                }
+                            }
+                            else {
+                                this.afficherNotificationSuccesEnregistrementCourriel()
+                            }
+
+                            this.Systeme.infosEnregistrement.courrielEnvoye = true
+                            this.$refs.modalEnregistrement.setAttribute('afficher', false)
+                        }
+
+                        if(estMiseAJourExpiration) {
+                            estAfficherPopUpSessionExpire = false
+                        }
+
+                        expirationSessionUTC = response.data
+                    })
+                    .catch(error => {
+                        const noErreur = error && error.response && error.response.data && error.response.data.id ? error.response.data.id : 0
+
+                        if (noErreur === '99' || noErreur === '100'){
+                            definirSessionInvalide()
+                            window.location.href = '@CultureInfoExtensions.LangueUrl/SessionInvalide/@Model.SystemeAutorise/@Model.TypeFormulaire/@(Model.Version??"0")/@Model.ShortInstance'
+                        }
+
+                        if (estActionUtilisateur) {
+                            //On doit obtenir le bouton qui est à l'origine de l'enregistrement afin de compléter correctement le traitement en cours
+                            const boutonTraitementEnCours = this.$refs.modalEnregistrement.getAttribute('afficher') === 'true' ? this.$refs.btnEnregistrerModalEnregistrement : this.$refs.btnEnregistrer
+                            
+                            utd.traitementEnCours.terminer(boutonTraitementEnCours)
+                            journaliserErreurJs(error)
+                            this.afficherErreurTechnique()
+                        }
+                    })
+                })
+            },
+            submitFormEnregistrement() {
+                this.enregistrerFormulaire(true,true)
+            },
+            submitFormEnregistrementRaw() {
+                utd.traitementEnCours.debuter(this.$refs.btnEnregistrerModalEnregistrement)
+
+                this.$formulate.submit('formEnregistrement')
+
+                setTimeout(function (formulate) {
+                    const form = formulate.$formulate.registry.get("formEnregistrement")
+                    if (form.hasErrors) {
+                        utd.traitementEnCours.terminer(formulate.$refs.btnEnregistrerModalEnregistrement)
+                    }
+                }, 0, this)
+            },
+            submitFormCourrielConfirmation() {
+                if (this.FormCourrielConfirmation.courrielConfirmation) {
+                    this.Systeme.infosEnregistrement = { courriel: this.FormCourrielConfirmation.courrielConfirmation }
+                }
+
+                this.soumettreFormulaire()
+            },
+            submitFormCourrielConfirmationRaw() {
+                utd.traitementEnCours.debuter(this.$refs.btnPoursuivreModalCourrielConfirmation)                        
+                this.$formulate.submit('formCourrielConfirmation')
+
+                setTimeout(function (formulate) {
+                    const form = formulate.$formulate.registry.get("formCourrielConfirmation")
+                    if (form.hasErrors) {                        
+                        utd.traitementEnCours.terminer(formulate.$refs.btnPoursuivreModalCourrielConfirmation)                        
+                    }
+                }, 0, this)
+            },
+            failedValidation(data) {
+                this.$el.setAttribute('data-submit', true)
+            },
+            validerFormulaire(event) {
+                this.noPageEnCoursRevision = 0
+                this.pagesAReviser = []
+
+                this.form.EtatRevision = ''
+                utd.traitementEnCours.debuter(document.getElementById('btnValiderFormulaire'))
+                this.$formulate.options.mtess.estModeRevision = true
+                this.$formulate.options.mtess.estAffichagePageRevision = true
+
+                this.nettoyerModele().then(estSuccesNettoyage => {
+                    if(estSuccesNettoyage) {
+                        setTimeout(function (formulate) {
+                            formulate.form.validAll = true
+                            
+                            if(formulate.revisionAvecAvancement){
+                                formulate.reviserPages().then(()=>{
+                                    formulate.$formulate.submit('form')
+                                    formulate.terminerRevision(formulate)
+                                })
+                            } else {
+                                formulate.$formulate.submit('form')
+                                formulate.terminerRevision(formulate)
+                            }
+                        }, 50, this)
+                    } else {
+                        utd.traitementEnCours.terminer(bouton)
+                        this.afficherErreurTechnique();
+                    }
+                })
+                .catch(error => {                    
+                    utd.traitementEnCours.terminer(bouton)
+                    journaliserErreurJs({error: error});
+                    this.afficherErreurTechnique();
+                });
+            },
+            nettoyerModele() {
+                if ('@Model.TypeFormulaire!.ToLower()' === 'devcfg') {
+                    //Aucun nettoyage si dans devcfg
+                    return Promise.resolve(true);
+
+                } else {
+                    return this.$formulate.registry.get("form").getFormValues().then(donneesFormulaire => {
+                        const data = { form: donneesFormulaire, systeme: this.Systeme }
+                        return axios.post(`/api/Soumettre/ObtenirChampsObsoletes/@Model.SystemeAutorise/@Model.TypeFormulaire/@Model.Version`, data, getHeaders())
+                            .then(response => {
+                                if(response && response.data){
+                                    const champsAEpurer = response.data;
+                                
+                                    for (idChamp of champsAEpurer) {
+                                        const champs = idChamp.split('.')
+                                        let objet = this.form
+                                        const nbChamps = champs.length - 1;
+
+                                        champs.every((champ, indexe) => {                                        
+                                            if(objet[`${champ}`] !== undefined){
+                                            
+                                                if(nbChamps === indexe){
+                                                    delete objet[`${champ}`];
+                                                } else {
+                                                    objet = objet[`${champ}`];
+                                                }
+                                                return true;
+                                            }
+                                            else {
+                                                //On ne trouve pas l'objet spécifié on arrête
+                                                return false;
+                                            }
+                                        });                    
+                                    }                               
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            })
+                            .catch(error => {
+                                journaliserErreurJs({error: error})
+                                return false;
+                            });
+                    });
+                }
+            },
+            terminerRevision(formulate){
+                setTimeout(function (formulate) {
+                    const form = formulate.$formulate.registry.get("form")
+                    formulate.form.EtatRevision = form.hasErrors ? 'contient-erreurs' : 'sans-erreur'
+                    utd.traitementEnCours.terminer(document.getElementById('btnValiderFormulaire'))
+                    formulate.majStatutPagesVisibles()
+                }, 10, formulate)
+            },
+            reviserPages(){
+                return new Promise((resolve, reject) => {
+                    const pagesVisibles = []
+                    for (const groupe of this.pagesGroup) {
+                        for (const page of groupe.pages) {
+                            if (this.estPageAffichee({ groupe: groupe, page: page })) {
+                                pagesVisibles.push(page.id)
+                            }
+                        }
+                    }
+                    this.nbPagesVisibles = pagesVisibles.length
+                    this.reviserPage(pagesVisibles, resolve)
+                })
+            },
+
+            reviserPage(pagesVisibles, resolve){
+
+                const indexePageAReviser = this.pagesAReviser.length
+                this.pagesAReviser.push(pagesVisibles[indexePageAReviser])                
+
+
+                this.$nextTick(function () {
+
+                    if(indexePageAReviser === pagesVisibles.length - 1){
+                        resolve()
+
+                    } else {
+                        this.noPageEnCoursRevision ++;
+                        setTimeout(() => {
+                            this.reviserPage(pagesVisibles, resolve)
+                        }, 50)
+                    }
+                })
+            },
+            soumettreFormulaire(event) {
+
+                const estActionUtilisateur = event && event.currentTarget
+                this.alimenterCourrielSiConnu()
+
+                //Si le courriel de l'utilisateur est connu ou si la soumission n'a pas été déclanchée par l'utilisateur (clic sur bouton soumettre), on soumet les données, sinon on affiche la modale demandant à l'utilisateur de saisir son courriel pour recevoir une confirmation.
+                if (this.estCourrielUtilisateurConnu() || !estActionUtilisateur) {
+                    this.$formulate.registry.get("form").getFormValues().then(donneesFormulaire => {
+                        const donnees = { form: donneesFormulaire, systeme: this.Systeme }
+                        const bouton = event && event.currentTarget ? event.currentTarget : null
+                        if (estActionUtilisateur) {
+                            utd.traitementEnCours.debuter(bouton)
+                        }
+                        axios.post('/api/Soumettre/Transmission/@Model.ShortInstance/?version=@Model.Version', donnees, getHeaders())
+                            .then(response => {
+                                this.Systeme.confirmation = response.data
+                                definirSessionInvalide()
+                                window.location.href = `@CultureInfoExtensions.LangueUrl/confirmation/@Model.SystemeAutorise/@Model.TypeFormulaire/${response.data}/@(Model.Version ?? "0")/@Model.ShortInstance/${window.location.search}`;
+                            })
+                            .catch(error => {
+                                utd.traitementEnCours.terminer(bouton)
+                         
+                                if(error.response.data && error.response.data.type == 'validation')
+                                {
+                                    journaliserErreurJs({error: error, reponseData: error.response.data})
+                                    lifecycle.removeUnsavedChanges('doitAfficherMessage')
+                                    window.location.reload()
+                                } else {
+                                    journaliserErreurJs({error: error})
+                                    this.afficherErreurTechnique()
+                                }
+                            });
+                    })
+                }
+                else {                    
+                    this.$refs.modalCourrielConfirmation.setAttribute('afficher', true)
+                }
+            },
+            afficherNotificationSuccesEnregistrement() {
+                const parametres = {
+                    titre: i18n.t("notification.succes"),
+                    message: i18n.t("notification.enregistrement"),
+                    texteBoutonFermer: i18n.t("boutons.fermer")
+                }
+
+                utd.notification.emettre(parametres)
+            },
+            afficherNotificationSuccesEnregistrementEspaceClient() {
+                const parametres = {
+                    titre: i18n.t("notification.succes"),
+                    message: i18n.t("notification.enregistrement"),
+                    texteBoutonFermer: i18n.t("boutons.fermer")
+                }
+
+                utd.notification.emettre(parametres)
+            },
+            afficherNotificationSuccesEnregistrementCourriel() {
+                const parametres = {
+                    titre: i18n.t("notification.succes"),
+                    message: i18n.t("notification.enregistrement"),
+                    texteBoutonFermer: i18n.t("boutons.fermer")
+                }
+
+                utd.notification.emettre(parametres)
+            },
+            afficherMessageEnregistrementAuthentifie() {
+                var parametres = {
+                    type: "information",
+                    titre: i18n.t("modale.enregistrement"),
+                    corps: `@(await Config.ObtenirValeurHtml("enregistrement.texteModaleEnregistrementAuthentifie"))`,
+                    texteBoutonPrimaire: i18n.t("boutons.fermer")
+                };
+
+                return utd.message.afficher(parametres);
+            },
+            afficherErreurTechnique() {
+                //TODO log erreur avec api/log + Regrouper ces fonctions dans un import vue afin de réutiliser au lieu de copier aussi dans reprise
+                const parametres = {
+                    type: "erreur",
+                    titre: i18n.t("messages.erreurTechnique.titre"),
+                    corps: i18n.t("messages.erreurTechnique.corps"),
+                    texteBoutonFermer: i18n.t("boutons.fermer"),
+                    texteBoutonPrimaire: i18n.t("boutons.fermer")
+                };
+
+                return utd.message.afficher(parametres);
+            },
+            afficherMessageExpirationSessionUtilisateur() {
+                var parametres = {
+                    type: "avertissement",
+                    titre: i18n.t("modale.expirationSession"),
+                    corps: i18n.t("modale.texteExpirationSession"),
+                    texteBoutonPrimaire: i18n.t("boutons.prolonger")
+                };
+
+                return utd.message.afficher(parametres);
+            },
+            repeatableAdded(model) {
+                if (document.activeElement) {
+                    const $conteneurGroupe = $(document.activeElement).parents('[data-type=group]:first')
+
+                    if ($conteneurGroupe.length) {
+                        const $tirroirs = $conteneurGroupe.find('.collapse')
+
+                        if ($tirroirs.length) {
+                            $tirroirs.collapse('hide')
+                        }
+
+                        this.$nextTick(function () {
+                            const $contenuTirroirAjoute = $conteneurGroupe.find('.collapse:last')
+                            if ($contenuTirroirAjoute.length) {
+                                this.donnerFocusPremierElementFocusable($contenuTirroirAjoute[0])
+
+                                //setTimeout requis pour FFox... Comme si animation tirroir bloquait le scrollIntoView. On scroll à l'avant dernier tirroir (ou au 1er si un seul)
+                                setTimeout(function () {
+                                    const $entetesTirroirs = $conteneurGroupe.find('[data-toggle=collapse]')
+                                    if ($entetesTirroirs.length) {
+                                        const i = $entetesTirroirs.length > 1 ? $entetesTirroirs.length - 2 : 0
+                                        $entetesTirroirs[i].scrollIntoView()
+                                    }
+                                })
+                            }
+                        })
+                    }
+                }
+            },
+            repeatableRemoved(model) {
+                if (document.activeElement) {
+                    const $conteneurGroupe = $(document.activeElement).parents('[data-type=group]:first')
+
+                    this.$nextTick(function () {
+
+                        //On scroll à l'avant dernier tirroir (ou au 1er si un seul)
+                        const $entetesTirroirs = $conteneurGroupe.find('[data-toggle=collapse]')
+                        if ($entetesTirroirs.length) {
+                            const i = $entetesTirroirs.length > 1 ? $entetesTirroirs.length - 2 : 0
+                            $entetesTirroirs[i].scrollIntoView()
+                        }
+                    })
+                }
+            },
+            invalidMessage(fields) {
+                const listeErreurs = []
+                const nomChamps = Object.keys(fields)
+
+                nomChamps.forEach(nomChamp => {
+                    const champ = fields[nomChamp]
+                    if (champ.hasErrors) {
+                        if (champ.context && champ.context.type !== 'group') {
+                           this.ajouterErreursChamp(champ, listeErreurs)
+                        } else {
+                            this.ajouterErreursGroupe(champ, listeErreurs, true)
+                        }
+                    }
+                })
+
+                return listeErreurs.length > 0 ? JSON.stringify(listeErreurs) : false
+            },
+            // Obtient la valeur d'un champ. indexe est uniquement utilisé pour le type repeatable.
+            val(idChamp, indexe) {
+                const i = indexe || 0
+                const champs = idChamp.split('.')
+                let objetAValider = this.form
+
+                for (champ of champs) {
+                    if (Array.isArray(objetAValider)) {
+                        if (objetAValider.length === 0) {
+                            return ''
+                        }
+                        objetAValider = objetAValider[i] || objetAValider[0]
+                    }
+
+                    if (!objetAValider[`${champ}`] && objetAValider[`${champ}`] !== false) {
+                        return ''
+                    } else {
+                        objetAValider = objetAValider[`${champ}`]
+                    }
+                }
+
+                return objetAValider || ''
+            },
+
+            //TODO évaluer possibilité d'en faire une fonction commune
+            donnerFocusPremierElementFocusable(conteneur) {
+                const elementsFocusables = obtenirElementsFocusables(conteneur)
+                if (elementsFocusables.length > 0) {
+                    elementsFocusables[0].focus()
+                    return true
+                }
+                return false
+            },
+
+            ajouterErreursChamp(champ, listeErreurs) {
+                 champ.formShouldShowErrors = true
+                
+                const name = champ.context.id
+
+                champ.context.validationErrors.forEach(message => {
+                    listeErreurs.push({ name: name, message: message })
+                })
+            },
+            ajouterErreursGroupe(groupe, listeErreurs, ajouterErreursEnfants) {
+                let erreursGroupe = []
+                let erreursGroupeEnfants = []
+                groupe.formShouldShowErrors = true
+
+                // Traiter les erreurs dans les enfants du groupe
+                groupe.$children.forEach(enfant => {
+                    this.ajouterErreursEnfant(enfant, erreursGroupeEnfants)
+                })
+
+                // Obtenir l'id du premier contrôle en erreur dans le groupe. S'il n'y en a pas, on utilise l'id du groupe (div) on rend le div focusable
+                let nomPremierControleErreurGroupe = erreursGroupeEnfants.length ? erreursGroupeEnfants[0].name : null
+                if (!nomPremierControleErreurGroupe) {
+                    nomPremierControleErreurGroupe = groupe._data.defaultId
+                    groupe.$el.setAttribute('name', nomPremierControleErreurGroupe)
+                    groupe.$el.setAttribute('id', nomPremierControleErreurGroupe)
+                    groupe.$el.setAttribute('tabindex', '-1')
+                }
+
+                if (groupe.allErrors.length) {
+                    // Erreurs haut niveau du groupe
+                    groupe.allErrors.forEach(message => {
+                        if (message !== true) {
+                            erreursGroupe.push({ name: nomPremierControleErreurGroupe, message: message })
+                        }
+                    })
+                }
+
+                if (erreursGroupeEnfants.length > 0 && erreursGroupe.length == 0) {
+                    // Aucun message erreur de haut niveau sur le groupe, mais erreurs à l'intérieur du groupe
+                    // Si le groupe a un libellé on indique qu'il y a au moins une erreur et on pointe sur première champ erreur du groupe, sinon on ne fait rien
+                    if(groupe.$options.propsData.label){
+                        erreursGroupe.push({ name: nomPremierControleErreurGroupe, message: groupe.label + i18n.t('validations.erreur') })
+                    }
+                }
+
+                listeErreurs.push(...erreursGroupe)
+
+                if (ajouterErreursEnfants) {
+                    listeErreurs.push(...erreursGroupeEnfants)
+                }
+            },
+            ajouterErreursEnfant(enfant, listeErreurs) {
+
+                enfant.formShouldShowErrors = true
+
+                if (enfant.isSubField) {
+                    const nameEnfant = enfant.context.id
+
+                    enfant.validationErrors.forEach(message => {
+                        listeErreurs.push({ name: nameEnfant, message: message })
+                    })
+                } else {
+                    enfant.$children.forEach(enfant => {
+                        this.ajouterErreursEnfant(enfant, listeErreurs)
+                    })
+                }
+            },
+            obtenirIdPageControle(controle) {
+                return controle.parents('.section:first').attr('data-id-page')
+            },
+            effectuerNavigation(noPage, identifiantControleFocus, navigationFureteur, estRepositionnementBacASable) {
+                this.$formulate.options.mtess.estAffichagePageRevision = false
+                this.form.validAll = false
+                this.config.keepData = true
+              
+                this.majStatutPage(this.pageCourante.no)
+
+                const pageDemandee = this.obtenirPageParNo(noPage)
+                if (pageDemandee.page.id === 'revision' && this.form.EtatRevision == undefined) {
+                    this.form.EtatRevision = 'initial'
+                }
+
+                //Si affichage mobile, réduire le menu mobile au changement de page
+                if(window.innerWidth < largeurViewportAffichageMenuMobile){
+                    $("#menuPrincipal").collapse('hide')
+                }
+
+                //Réduire le contenu de de tous les sous-menus sauf celui de la nouvelle page courante
+                $("ul.niv2").not(`#groupe${pageDemandee.groupe.no}`).collapse('hide')
+
+                //Développer le contenu du sous-menu à laquelle la page appartient
+                $(`#groupe${pageDemandee.groupe.no}`).collapse('show')
+
+
+                if (!navigationFureteur) {
+
+                    const urlDestination = `${document.location.pathname}${document.location.search}#p=${noPage}`
+
+                    //Si l'url ne contient pas de hash ou si le hash n'est pas vide, on ajoute une entrée dans l'historique, sinon on remplace l'entrée existante (afin de ne pas avoir les entrées des erreurs qui ne contiennent qu'un #)
+                    if (window.location.href.indexOf('#') < 0 || window.location.hash) {
+                        history.pushState(null, null, urlDestination)
+                    }
+                    else {
+                        history.replaceState(null, null, urlDestination)
+                    }
+
+                    //Enregistrement automatique du formulaire au changement de page (sauf si navigationFureteur, ex. back)
+                    this.enregistrerFormulaire(false,true)
+                }
+                
+                //Si on arrive de la page révision, on force un masquage de toutes les pages afin que lorsque nous allons naviguer vers la page demandée, elle soit rendue avec tout les contrôles (force un repaint avec tous les contrôles grâce à this.$formulate.options.mtess.estAffichagePageRevision = false)
+                //On réinitialise également les infos sur les pages à réviser (garantir la réinitialisation de l'avancement de la révision et aussi perfo à l'ouverture de la page révision lors de son prochain accès)
+                if (pageDemandee.page.id !== 'revision' && this.pageCourante.id === 'revision') {
+                    this.EstRetourErrorSummary = true
+                    this.noPageEnCoursRevision = 0
+                    this.pagesAReviser = []                                
+                }
+
+                this.$nextTick(function () {        
+                    
+                    this.noPageCourante = noPage
+                    this.EstRetourErrorSummary = false
+
+                    //Afin de s'assurer d'afficher toutes les erreurs on force le submit du form si nous sommes en mode révision (permet de corriger bug certaines erreurs de groupes non affichées suite à une navigation)
+                    if(this.$formulate.options.mtess.estModeRevision && this.pageCourante.id !== 'revision'){
+                        this.$formulate.submit('form')
+                    }
+
+                    this.$nextTick(function () {            
+                        this.config.keepData = false
+            
+                        if (@afficherBlocCode) {
+                            this.afficherBlocCode()
+                        }                    
+
+                        if (identifiantControleFocus) {
+                            this.donnerFocusControle(identifiantControleFocus, estRepositionnementBacASable)
+                        } else {
+
+                            //On traite une navigation sans contrôle spécifié à qui donner le focus (ex. page suivante/précédente ou clic sur une page dans menu gauche). On donne focus au titre de l'étape.
+                            const titreEtape = document.getElementsByClassName('titre-etape-courante')[0]
+                            titreEtape.focus()
+                            window.scrollTo(0, 0) /* On veut remettre le scroll en haut de page */
+
+                            if (this.pageCourante.id === 'revision' && this.form.EtatRevision !== 'initial') {
+                                
+                                this.form.EtatRevision = ''
+
+                                setTimeout(function (formulate) {
+                                    formulate.validerFormulaire()
+                                }, 0, this)
+                            }
+                        }
+                    })
+                })
+
+            },
+            afficherBlocCode(){
+                hljs.highlightAll()                
+                    
+                const clipboard = new ClipboardJS('.bloc-code > button', {
+                    target: function (trigger) {
+                    return trigger.nextElementSibling;
+                    }
+                })
+
+                clipboard.on('success', function(e) {
+                    e.clearSelection()
+                    const texte = e.trigger.previousElementSibling
+                    texte.classList.add('visible')
+                    setTimeout((t) => {
+                        t.classList.remove('visible')
+                    }, 3000, texte);
+                })
+
+                clipboard.on('error', function(e) {
+                    console.log('Erreur le de la copie dans le presse-papier.')
+                })
+            },
+            //Execute effectuerNavigation avec un décalage afin que les validations soient effectuées.
+            effectuerNavigationDecalee(noPage, identifiantControleFocus, navigationFureteur) {
+               
+                const pageDemandee = this.obtenirPageParNo(noPage)
+                setTimeout(function (formulate) {
+                    formulate.effectuerNavigation(noPage, identifiantControleFocus, navigationFureteur)
+                }, decalageTraitementSuiteValidationsMs, this)
+            },
+            donnerFocusControle(identifiant, estRepositionnementBacASable) {
+
+                if (estRepositionnementBacASable) {
+                    //On repositionne l'écran sur un label à partir d'un texte (identifiant est un texte de label ici)
+                    this.repositionnerEcranLabelQuestion(identifiant, estRepositionnementBacASable)
+                    return
+                }
+                
+                //On donne le focus à un contrôle à partir de son name et on repositionne l'écran sur le label associé à ce contrôle
+                let controle = document.querySelector(`[cle="${identifiant}"`)
+
+                if(!controle){
+                    controle = document.getElementsByName(identifiant)
+                    controle = controle ? controle[0] : null
+                }
+
+                if (controle) {
+                    setTimeout(function (formulate) {
+                        controle.focus()
+                        formulate.repositionnerEcranLabelQuestion(controle.id)
+                    }, 0, this)
+                } else {
+
+                    /* Ici on traite essentiellement les erreurs de haut niveau sur les groupes (ex. un groupe obligatoire sans occurence)
+                       setTimeout nécessaire afin que le rendering des erreurs soit fait. */
+                    setTimeout(function (formulate) {
+                        const controlesErreur = $("[data-has-errors]").find("input,textarea")
+                        if (controlesErreur.length) {
+                            controlesErreur[0].focus()
+                            formulate.repositionnerEcranLabelQuestion(controlesErreur[0].id)
+                        }
+                    }, 0, this)
+                }
+            },
+            majStatutPage(noPage) {
+
+                //Obtenir la page et mettre à jour son indicateur d'erreurs (sauf page révision)
+                const page = this.obtenirPageParNo(noPage).page
+
+                if (page.id !== 'revision') {
+                    const form = this.$formulate.registry.get("form")
+
+                    page.dirty = form.formContext.hasValue
+
+                    form.hasValidationErrors().then(contientErreurs => {
+                        page.contientErreurs = contientErreurs
+                        page.sansErreur = !page.contientErreurs
+                    })
+                }
+            },
+            obtenirTexteStatutSection(groupe) {
+                let texte = ""
+                if (groupe.no === this.groupeCourant.no) {
+                    texte = "@Localizer["etapier.srSectionEnCours"] "
+                }
+
+                if (this.estGroupeContenantErreur(groupe)) {
+                    if (this.form.EtatRevision === 'contient-erreurs') {
+                        texte += " @Localizer["etapier.srSectionContientErreurs"]"
+                    }
+                }
+
+                return texte.trim()
+            },
+            obtenirTexteStatutPage(page) {
+                let texte = ""
+                if (page.no === this.noPageCourante) {
+                    texte = " @Localizer["etapier.srEtapeEnCours"]"
+                }
+
+                if (page.contientErreurs) {
+                    if (this.form.EtatRevision === 'contient-erreurs') {
+                        texte += " @Localizer["etapier.srEtapeContientErreurs"]"
+                    } else {
+                        texte += " @Localizer["etapier.srEtapeACompleter"]"
+                    }
+                } else {
+                    if (page.sansErreur) {
+                        texte += " @Localizer["etapier.srEtapeCompletee"]"
+                    } else {
+                        texte += " @Localizer["etapier.srEtapeACompleter"]"
+                    }
+                }
+
+                return texte.trim()
+            },
+            majStatutPagesVisibles() {
+                for (const groupe of this.pagesGroup) {
+                    for (const page of groupe.pages) {
+                        if (this.estPageAffichee({ groupe: groupe, page: page })) {
+                            const elementPage = document.querySelector(`[data-id-page="${page.id}"]`)
+                            if (elementPage) {
+                                const elementEnErreur = elementPage.querySelector('[data-is-showing-errors="true"]')
+
+                                if (page.id === 'revision') {
+                                    const form = this.$formulate.registry.get("form")
+                                    page.contientErreurs = form.hasErrors
+                                } else {
+                                    page.contientErreurs = elementEnErreur ? true : false
+                                }
+                                page.sansErreur = !page.contientErreurs
+                            }
+                        }
+                    }
+                }
+
+                //Forcer un rafraichissement de la vue avec les nouvelles données
+                this.$forceUpdate()
+            },
+            obtenirPagesVisiblesGroupe(groupe) {
+                const pages = []
+                for (const page of groupe.pages) {
+                    if (this.estPageAffichee({ groupe: groupe, page: page })) {
+                        pages.push(page)
+                    }
+                }
+                return pages
+            },
+            estGroupeContenantErreur(groupe) {
+                return groupe.pages.some(page => page.contientErreurs && this.estPageAffichee({ groupe: groupe, page: page }));
+            },
+            effectuerNavigationParId(idPage, nomControleFocus) {
+
+                if(idPage === this.pageCourante.id){
+                    //Nous sommes déjà dans la bonne page, on donne simplement le focus au contrôle spécifié
+                    if (nomControleFocus) {
+                        this.donnerFocusControle(nomControleFocus)
+                    } else {
+                        //On traite une navigation sans contrôle spécifié à qui donner le focus. On donne focus au titre de l'étape. Ne devrait pas arriver.
+                        const titreEtape = document.getElementsByClassName('titre-etape-courante')[0]
+                        titreEtape.focus()
+                        window.scrollTo(0, 0) /* On veut remettre le scroll en haut de page */
+                    }
+                } else {
+                    //Nous ne sommes pas déjà dans la bonne page
+                    const pageDemandee = this.obtenirPageParId(idPage)
+                    this.effectuerNavigation(pageDemandee.no, nomControleFocus)
+                }
+            },
+            repositionnerEcranLabelQuestion(identifiant, estRepositionnementBacASable) {
+                if(estRepositionnementBacASable){
+                    //Notre identifiant en entrée est un texte de libellé
+                    let labels = document.getElementsByTagName('label')
+
+                    if(!this.repositionnerEcranLabelQuestionBacASable(labels, identifiant)) {
+                        //Nous n'avons pas trouvé notre label, on essaie avec les éléments de classe "libelle" qui sont aussi des labels pour nous.
+                        labels = document.getElementsByClassName('libelle')
+                        this.repositionnerEcranLabelQuestionBacASable(labels, identifiant)
+                    }
+                } else {
+                    this.positionnerControleCentrePage(document.getElementById(identifiant));
+                }
+            },
+            repositionnerEcranLabelQuestionBacASable(labels, texteRecherche){
+                for (const label of labels) {
+                    const spans = label.getElementsByTagName('span')
+                    const texteLabel = spans.length ? spans[0].textContent : ''
+
+                    if(texteLabel && texteLabel === texteRecherche){
+                        this.positionnerControleCentrePage(label);
+                        return true
+                    }
+                }
+                return false
+            },
+            positionnerControleCentrePage(ctrl) {
+                if(ctrl) {
+                    const offsetTop = obtenirOffsetTop(ctrl);
+                    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
+                    window.scrollTo(0, offsetTop - vh/2);
+                }
+            },
+            obtenirPageParId(idPage) {
+                for (const groupe of this.pagesGroup) {
+                    const page = groupe.pages.find(page => page.id === idPage)
+                    if (page) {
+                        if (this.estPageAffichee({ groupe: groupe, page: page })){
+                            return page
+                        }
+                    }
+                }
+            },
+            obtenirPageParNo(noPage) {
+                for (const groupe of this.pagesGroup) {
+                    const page = groupe.pages.find(page => page.no === noPage)
+                    if (page) {
+                        return { groupe: groupe, page: page }
+                    }
+                }
+            },
+            estPageAffichee(groupeEtPage) {
+                const groupe = groupeEtPage.groupe
+                const page = groupeEtPage.page
+                const form = this.form
+                const val = this.val
+
+                if (groupe['v-if']) {
+                    if (eval(groupe['v-if'])) {
+                        if (page['v-if']) {
+                            if (eval(page['v-if'])) {
+                                return true
+                            }
+                        } else {
+                            return true
+                        }
+                    }
+                } else {
+                    if (page['v-if']) {
+                        if (eval(page['v-if'])) {
+                            return true
+                        }
+                    } else {
+                        return true
+                    }
+                }
+                return false
+            },
+            validerExpirationSession() {
+                const tempsActuel = Math.round(Date.now() / 1000);
+                const formulate = this
+
+                if (tempsActuel >= (expirationSessionUTC - @Model.DelaiAffichagePopUp)) {
+                    if (!estAfficherPopUpSessionExpire) {
+                        estAfficherPopUpSessionExpire = true;
+                        formulate.afficherMessageExpirationSessionUtilisateur().then(function () {
+                                formulate.enregistrerFormulaire(false,true)
+                        });
+                    }else if(tempsActuel >= expirationSessionUTC - 10){ // Fermer 10 sec. avant
+                        formulate.deconnexionSession()
+                    }
+                }
+            },
+            deconnexionSession()
+            {
+                lifecycle.removeUnsavedChanges('doitAfficherMessage')
+                window.location.href = '@CultureInfoExtensions.LangueUrl/deconnexion/@Model.SystemeAutorise/@Model.TypeFormulaire/@(Model.Version ?? "0")/@Model.ShortInstance'
+            },
+            forcerSoumettre()
+            {
+                
+                this.$formulate.registry.get("form").getFormValues().then(donneesFormulaire => {
+                    const systeme = { ...this.Systeme }
+                    const data = { form: donneesFormulaire, systeme: systeme }
+
+                    axios.post('/api/Soumettre/Transmission/@Model.ShortInstance/?version=@Model.Version', data, getHeaders())
+                        .then(response => {
+                            console.log(response)
+                        })
+                        .catch(error => {
+                            console.log(error.response.data)
+                            journaliserErreurJs(error)
+                        })
+                })
+            },
+            forcerPdf()
+            {
+                this.$formulate.registry.get("form").getFormValues().then(donneesFormulaire => {
+                    const systeme = { ...this.Systeme }
+                    const data = { form: donneesFormulaire, systeme: systeme }
+
+                    document.getElementById("multiEmbedPdf").innerHTML = ""
+
+                    axios.post('/api/Soumettre/Transmission/@Model.ShortInstance/?version=@Model.Version&forcerPDF=true', data, getHeaders())
+                        .then(response => {
+                            const contentType = 'application/pdf'
+
+                            const b64toBlob = (b64Data, contentType = '', sliceSize = 512) => {
+                                const byteCharacters = atob(b64Data)
+                                const byteArrays = []
+
+                                for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                                    const slice = byteCharacters.slice(offset, offset + sliceSize)
+
+                                    const byteNumbers = new Array(slice.length)
+                                    for (let i = 0; i < slice.length; i++) {
+                                        byteNumbers[i] = slice.charCodeAt(i)
+                                    }
+
+                                    const byteArray = new Uint8Array(byteNumbers)
+                                    byteArrays.push(byteArray)
+                                }
+
+                                const blob = new Blob(byteArrays, { type: contentType })
+                                return blob
+                            }
+
+                            for (let i = 0; i < response.data.length; i++) {
+                                var tmp = response.data[i]
+
+                                const blob = b64toBlob(tmp.fichier, contentType)
+
+                                if (typeof window.navigator.msSaveBlob !== 'undefined') {
+                                // IE workaround for "HTML7007: One or more blob URLs were revoked by closing the blob for which they were created. These URLs will no longer resolve as the data backing the URL has been freed."
+                                    window.navigator.msSaveBlob(blob, tmp.nom)
+                                } else {
+                                    var URL = window.URL || window.webkitURL
+                                    var blobUrl = URL.createObjectURL(blob)
+
+                                    var titre = document.createElement("h3")
+                                    titre.innerHTML = tmp.nom
+                                    document.getElementById("multiEmbedPdf").appendChild(titre)
+
+                                    //<embed style="display:none; width:950px; left:0px; height:800px;" id="embedPdf" src="" />
+                                    var embedPdf = document.createElement("embed")
+                                    embedPdf.setAttribute("width", "950px")
+                                    embedPdf.setAttribute("left", "0px")
+                                    embedPdf.setAttribute("height", "800px")
+                                    embedPdf.setAttribute("src", blobUrl)
+                                    embedPdf.setAttribute("id", tmp.nom)
+                                    document.getElementById("multiEmbedPdf").appendChild(embedPdf)
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.log(error.response.data)
+                            journaliserErreurJs(error)
+                        })
+                })
+            },
+            //Gérer le changement de section via un back/forward du fureteur
+            gererChangementSectionViaNavigationFureteur() {
+                const formulate = this
+
+                //On ne veut pas que le fureteur remette la position du scroll comme elle était lors d'une navigation par le fureteur (ex. back/forward ). On gère ça nous même comme des grands (toujours un scroll top).
+                history.scrollRestoration = "manual"
+
+                window.addEventListener("hashchange", function (event) {
+
+                    if (window.location.href.indexOf('#') < 0) {
+                        //L'url ne contient pas de hash, on est sur la première page
+                        formulate.effectuerNavigationDecalee(0, null, true)
+                    }
+                    else {
+                        //L'url contient un hash. On s'assure qu'il n'est pas vide avant de tenter une navigation. (Les liens d'erreurs dans le error summary on un href="#", dans cette situation on ne doit rien faire car une navigation vers l'erreur aura lieu.)
+                        if (window.location.hash) {
+                            const noPage = obtenirValeurHash('p')
+                            const no = parseInt(noPage) || 0
+                            formulate.effectuerNavigationDecalee(no, null, true)
+                        }
+                    }
+                })
+            },
+            gererRafraichissementPage() {
+                if (performance.navigation.type == performance.navigation.TYPE_RELOAD) {
+                    if (window.location.href.indexOf('#') < 0 || window.location.hash) {
+                        if (window.location.hash) {
+                            const formulate = this
+                            const noPage = obtenirValeurHash('p')
+                            const no = parseInt(noPage) || 0
+                            formulate.effectuerNavigation(no, null, true)
+                        }
+                    }
+                }
+
+            },
+            fnStateChange(event) {
+                if (!this.doitAfficherMessageConfirmationPerteDonnees(event)) {
+                    lifecycle.removeUnsavedChanges('doitAfficherMessage')
+                }
+
+                if (!sessionValide || estModeBacASable) {
+                    return;
+                }
+
+                if (event.newState === 'terminated') {
+                    forcerExpirationSession()
+                } else if (event.newState === 'active') {
+                    redirigerSiSessionInvalide()
+                } else if (event.newState === 'hidden') {
+                    //L'enregistrement ici fonctionne uniquement si la page est cachée (donc fureteur ou onglet réduit)
+                    if (sessionValide && !estConfirmationDeconnexionParUtilisateur) {
+                        if (!this.Systeme.confirmation) {
+                            this.enregistrerFormulaire(false, false)
+                        }
+                    }
+                }
+            },
+            effectuerDeconnexion() {
+                this.enregistrerFormulaire(false,false)
+                const formulate = this
+
+                if (this.estCourrielUtilisateurConnu()) {
+                    formulate.deconnexionSession()
+                 } else {
+                    //On affiche un message de confirmation à l'utilisateur avant de déconnecter.
+                    formulate.afficherMessageConfirmationDeconnexion()
+                        .then(function (resultat) {
+                            if (resultat === 'primaire') {
+                                estConfirmationDeconnexionParUtilisateur = true
+                                formulate.deconnexionSession()
+                            }
+                        });
+                }
+            },
+            afficherMessageConfirmationDeconnexion() {
+                var parametres = {
+                    type: "avertissement",
+                    titre: i18n.t("deconnexion.titreMessageConfirmation"),
+                    corps: i18n.t("deconnexion.corpsMessageConfirmation"),
+                    texteBoutonPrimaire: i18n.t("boutons.deconnecter"),
+                    texteBoutonSecondaire: i18n.t("boutons.retournerFormulaire"),
+                    estBoutonsTexteLong: true
+                };
+
+                return utd.message.afficher(parametres);
+            },
+            doitAfficherMessageConfirmationPerteDonnees(event) {
+                // Le formulaire a été transmis, ou la déconnexion a été confirmée par l'utilisateur ou la session est invalide
+                if (this.Systeme.confirmation || estConfirmationDeconnexionParUtilisateur || !sessionValide) {
+                    return false
+                }
+
+                return true
+            },
+            alimenterCourrielSiConnu() {
+                if ("@Model.CourrielUtilisateur") {
+                    this.Systeme.infosEnregistrement = { courriel: "@Model.CourrielUtilisateur" }
+                }
+            },
+            estCourrielUtilisateurConnu() {
+                //TODO5 ici ajouter condition selon config confirmationTransmission.nomChampCourrielUtilisateur
+                return this.Systeme.infosEnregistrement && (this.Systeme.infosEnregistrement.courriel || this.Systeme.infosEnregistrement.courrielEnvoye)
+            },
+            obtenirDataReactif() {
+                let donnees = JSON.parse("@data")
+
+                //On ajoute nos propriétés réactives
+                for (const groupe of donnees.pagesGroup) {
+                    for (const page of groupe.pages) {
+                        page['contientErreurs'] = true
+                        page['sansErreurs'] = false
+                    }
+                }
+                return donnees
+            },
+            formaterTelephone(event, estOnzeChiffresPermis) {
+                const valeur = obtenirValeurChampAFormater(event)
+
+                if (estTelephone(valeur, estOnzeChiffresPermis)) {
+                    //Le téléphone est valide, on enlève les espaces, tirets et parenthèses et on formate
+                    const valeurEpuree = valeur.replace(/(\s|-|\(|\))/g, '')
+                    const masque = valeurEpuree.length <= 10 ? { 3: ' ', 6: '-' } : { 1: ' ', 4: ' ', 7: '-' }
+                    appliquerFormatageChamp(event, valeurEpuree, masque)
+                }
+            },
+            formaterCodePostal(event) {
+                const masque = { 3: ' ' }
+                const valeurEpuree = obtenirValeurChampAFormater(event).replace(/[^a-zA-Z\d]/g, '')
+                appliquerFormatageChamp(event, valeurEpuree, masque, true)
+            },
+            formaterCP12(event) {
+                const masque = { }
+                const valeurEpuree = obtenirValeurChampAFormater(event).replace(/[^a-zA-Z\d]/g, '')
+                appliquerFormatageChamp(event, valeurEpuree, masque, true)
+            },
+            formaterNAM(event) {
+                const masque = { }
+                const valeurEpuree = obtenirValeurChampAFormater(event).replace(/[^a-zA-Z\d]/g, '')
+                appliquerFormatageChamp(event, valeurEpuree, masque, true)
+            },
+            formaterNombre(event, nbDecimales) {
+                const masque = { }
+                const nombreDecimal = obtenirNombre(obtenirValeurChampAFormater(event), nbDecimales)
+                appliquerFormatageChamp(event, nombreDecimal, masque, true)
+            }
+            @Html.Raw(await Config.ObtenirScriptsJs("method"))
+        },
+        computed: {
+            pageCourante() {
+                return this.obtenirPageParNo(this.noPageCourante).page
+            },
+            groupeCourant() {
+                 return this.obtenirPageParNo(this.pageCourante.no).groupe
+            },
+            groupeCourantContientErreur() {
+                return this.groupeCourant.pages.some(page => page.contientErreurs)
+            },
+            noPageSuivante() {
+                let noPageSuivante = this.noPageCourante + 1
+                let groupeEtPage = this.obtenirPageParNo(noPageSuivante)
+
+                while (groupeEtPage) {
+
+                    if (this.estPageAffichee(groupeEtPage)) {
+                        return groupeEtPage.page.no
+                    }
+
+                    noPageSuivante += 1
+                    groupeEtPage = this.obtenirPageParNo(noPageSuivante)
+                }
+
+                return null
+            },
+            noPagePrecedente() {
+                let noPagePrecedente = this.noPageCourante - 1
+                let groupeEtPage = this.obtenirPageParNo(noPagePrecedente)
+
+                while (groupeEtPage) {
+
+                    if (this.estPageAffichee(groupeEtPage)) {
+                        return groupeEtPage.page.no
+                    }
+
+                    noPagePrecedente -= 1
+                    groupeEtPage = this.obtenirPageParNo(noPagePrecedente)
+                }
+
+                return null
+            }
+            @Html.Raw(await Config.ObtenirScriptsJs("computed"))
+        },
+        watch: {
+            //On surveille les changements dans notre modèle et si nous sommes en mode debug on met à jour notre modèle "applati" (évite les erreurs de référence circulaire lorsqu'on a un form avec des fichiers)
+            //TODO ici si on est en prod, on pourrait retirer cette watch (perfo?)
+            form: {
+                handler(){
+                    if(this.estModeDebug){
+                        this.$formulate.registry.get("form").getFormValues().then(donneesFormulaire => {
+                            this.FormApplati = donneesFormulaire
+                        })
+                    }
+                },
+                deep: true
+            }
+
+
+
+            //TODO5 si courrielCOnfirmation spécifié dans config, ajouter une watch ici avec le nom du champ spécifié         
+/*          "details.position"(nouvelleValeur, ancienneValeur) {
+                this.Systeme.infosEnregistrement.courriel
+                if (this.FormEnregistrement.courrielEnregistrement) {
+                console.log("changes here")
+            }*/
+            
+            @Html.Raw(await Config.ObtenirScriptsJs("watch"))
+        },
+
+        data: function () {
+            let donnees = this.obtenirDataReactif()
+
+            donnees.form['EtatRevision'] = donnees.form['EtatRevision'] || 'initial'
+            donnees.form['validAll'] = false
+
+            if(estModeBacASable && sessionStorage.getItem('donneesFormModeBacSable')){
+                donnees.form = JSON.parse(sessionStorage.getItem('donneesFormModeBacSable'))
+            }
+            donnees['EstRetourErrorSummary'] = false
+            donnees['estModeDebug'] = false
+            donnees['FormApplati'] = {}
+            //TODO5 ici déterminer quel courriel on conserve... On prend toujours le courriel de config en premier, sinon le courriel du modele
+            donnees['FormEnregistrement'] = { courrielEnregistrement : "@Model.CourrielUtilisateur"}
+            donnees['FormCourrielConfirmation'] = {}
+            donnees['Systeme'] = {}
+            donnees['EstModeBacASable'] = estModeBacASable
+            donnees['Langue'] = '@Model.Language'
+            donnees['pagesAReviser'] = []
+            
+            //Éléments du modèle pour révision avec avancement
+            donnees['revisionAvecAvancement'] = false
+            donnees['nbPagesVisibles'] = 1
+            donnees['noPageEnCoursRevision'] = 0
+            return donnees
+        },
+        mounted() {
+
+            this.form.EtatRevision = 'initial'
+
+            //Développer le contenu du regroupement courant s'il y a lieu
+            $(`#groupe${this.groupeCourant.no}`).collapse('show')
+
+            this.gererChangementSectionViaNavigationFureteur()
+            this.gererRafraichissementPage()
+
+            if(!estModeBacASable){
+                setInterval(this.validerExpirationSession, 10000)
+            }
+            @Html.Raw(Model.Created)
+
+            if (@afficherBlocCode) {
+                this.afficherBlocCode()
+            }            
+        },
+        updated(){
+            this.$nextTick(function(){
+                ajusterAccessibiliteLiens()
+            })
+        },
+        created() {
+            if(!this.$formulate.options.mtess) {
+                this.$formulate.options.mtess = {}
+            }            
+
+            if ('@Model.TypeFormulaire!.ToLower()' === 'devcfg') {
+                return
+            }
+
+            this.estModeDebug = new URLSearchParams(window.location.search).get('debug')
+
+            //TODO éventuellement trouver pourquoi on ne peut pas attacher l'événement click directement sur le lien au lieu d'utiliser le event delegation... Pourtant le contrôle existe déjà ici, mais les événements qu'on y ajoute disparaisse une fois la page complètement chargée.
+            $(document).on('click', '#changementLangue', function () {
+                localStorage.removeItem('instance' + '@Model.ShortInstance')
+            })
+
+            lifecycle.addUnsavedChanges('doitAfficherMessage')
+            lifecycle.addEventListener('statechange', e => this.fnStateChange(e))
+        }
+    }
+
+    function verifierInstance()
+    {
+        if ('@Model.TypeFormulaire!.ToLower()' !== 'devcfg') {
+            nettoyerLocalStorageAvecExpiration('instance')
+            if (obtenirLocalStorageAvecExpiration('instance', '@Model.ShortInstance')) {
+                redirigerVersSessionInvalide()
+            }else{
+                definirLocalStorageAvecExpiration('instance', '@Model.ShortInstance', true, 10*24*60*60*1000)
+            }
+        }
+    }
+
+    function redirigerSiSessionInvalide() {
+
+        @{
+            if(Model.TypeFormulaire!.ToLower().Equals("devcfg"))
+            {
+                                   @:return;
+            }
+        }
+
+        //On vérifie si la session est valide, si ce n'est pas le cas on redirige à la page SessionInvalide
+        axios.post('/api/Soumettre/Verifier/@Model.ShortInstance', getHeaders()).catch(error => {
+
+            const noErreur = error && error.response && error.response.data && error.response.data.id ? error.response.data.id : 0
+
+            if (noErreur === '100') {
+               redirigerVersSessionInvalide()
+            }
+        })
+    }
+
+    function redirigerVersSessionInvalide() {
+        definirSessionInvalide()
+        window.location.href = '@CultureInfoExtensions.LangueUrl/SessionInvalide/@Model.SystemeAutorise/@Model.TypeFormulaire/@(Model.Version??"0")/@Model.ShortInstance'
+    }
+
+    function definirSessionInvalide() {
+        sessionValide = false
+        lifecycle.removeUnsavedChanges('doitAfficherMessage')
+    }
+
+    function getHeaders() {
+        return { headers: { "Accept-Language": @(CultureInfoExtensions.EstSiteFrancais ? "true" : "false") ? "fr-CA,fr;" : "en-CA,en;" } }
+    }
+
+    function obtenirValeurHash(key) {
+        const matches = location.hash.match(new RegExp(key + '=([^&]*)'))
+        return matches ? matches[1] : null
+    }
+
+    //Permet de donner le focus au prochain contrôle lorsque l'utilisateur tappe ENTER dans un champ inpu (text, number, tel, url et email).
+    //Normalement un ENTER dans un champ de formulaire provoque un submit. Nous ne voulons pas ça pour nos formulaires ça ne fait pas de sens.
+    //Le submit étant désactivé, cela provque une certaine incohérence sur les appareils mobiles (ex. Android, sur le dernier champ input d'un formulaire le clavier affiche un bouton "Go". Sur clique de ce bouton en théorie ça fait comme un ENTER (soumission du formulaire)).
+    //Dans notre cas ça ne fait rien et c'est normal. Nous donnons donc le focus au contrôle suivant (s'il y en a un, sinon on passe à la page suivante) afin que l'utilisateur ne soit pas bloqué s'il est habitué d'utiliser le bouton "Go".
+    //Ne s'applique qu'au formulaire principal.
+    function donnerFocusProchainControleSurEnter() {
+
+        $(document).on('keydown', 'input[type=text], input[type=number], input[type=tel], input[type=url], input[type=email]', function (e) {
+            var code = (e.keyCode ? e.keyCode : e.which)
+
+            if (this.form && this.form.id && this.form.id === 'formPrincipal') {
+                var code = (e.keyCode ? e.keyCode : e.which)
+
+                if (code == 13) {
+                    e.preventDefault()
+                    e.stopPropagation()
+
+                    const $elementsFocusables = obtenirElementsFocusablesFormulaire($("#formPrincipal"))
+                    const index = $elementsFocusables.index(this)
+
+                    if (index === $elementsFocusables.length - 1) {
+                        //Nous sommes sur le dernier contrôle de type input que nous gérons. On passe alors à la page suivante.
+                        $('#btnPageSuivante').click()
+                    } else {
+                        $elementsFocusables.get(index + 1).focus()
+                    }
+                }
+            }
+        });
+    }
+
+    function activerDebug() {
+
+        lifecycle.removeUnsavedChanges('doitAfficherMessage')
+        forcerExpirationSession()
+
+        var url = window.location.href;
+
+        if (url.indexOf("debug") == -1) {
+            if (url.indexOf("#") != -1) {
+                url = url.substring(0, url.indexOf("#"));
+            }
+            if (url.indexOf("?") == -1) {
+                url = url + "?debug=true";
+            }
+            else {
+                url = url + "&debug=true";
+            }
+            window.location = url;
+        }
+    }
+
+
+    function forcerExpirationSession() {
+        localStorage.removeItem('instance' + '@Model.ShortInstance')
+        if (!navigator.sendBeacon) { return }
+        var blob = new Blob([JSON.stringify({ "expiration" : expirationSessionUTC} )], {type : 'application/json; charset=UTF-8'})
+        navigator.sendBeacon('/api/Soumettre/DeconnecterSessionUtilisateur/@Model.ShortInstance', blob)
+    }
+
+    function log(log) {
+        console.log(log);
+    }
+
+    window.addEventListener('load', () => {
+        new Vue(appVue)
+    })
+    
+    donnerFocusProchainControleSurEnter()
+    </script>
+
+}

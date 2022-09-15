@@ -1,0 +1,17 @@
+﻿@page
+@model FRW.PR.Extra.Pages.FureteurDesuetModel
+
+@{
+    ViewData["Title"] = Localizer["fureteurDesuet.titrePage"];
+    ViewData["FureteurDesuet"] = true;
+    Layout = "_Layout2Colonnes";
+}
+
+@section colonneGauche
+{ 
+    <div class="contenu zone-html">
+        <div class="texte">
+            @Localizer["fureteurDesuet.texte"]
+        </div>
+    </div>        
+}

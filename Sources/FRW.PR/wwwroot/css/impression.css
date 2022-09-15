@@ -1,0 +1,129 @@
+﻿/*! impression */
+/* Feuille de style de base pour impression.
+*/
+/*====================================================================================================*/
+/*  -01- Général                                                                                  
+/* ---------------------------------------------------------------------------------------------------*/
+/*  -20- Cartes de type section de base
+/* ---------------------------------------------------------------------------------------------------*/
+/*  -25- Tableaux
+/* ---------------------------------------------------------------------------------------------------*/
+/*  -99- À Positionner
+/*====================================================================================================*/
+
+@media print {
+
+/*====================================================================================================*/
+/*  -01- Général
+/*====================================================================================================*/
+#pivLogoGouvernementPrint{
+    display: block;
+}
+
+/* Police */
+body {
+    color: #000 !important;
+    line-height: normal !important;
+}
+
+h1, h2, h3, h4, h5, h6, .couleur-base {
+    color: #000 !important;
+}
+
+/* Éléments à masquer lors impression */
+.no-print,
+.piv-entete,
+.conteneur-menu-identification,
+footer nav,
+utd-haut-page,
+#flecheHaut,
+.utd-btn, /* Boutons */
+.zone-boutons, /* Zone de boutons */
+.select2-selection__choice__remove /* X de désélection choix select2 */ {
+    display: none !important;
+}
+
+/* Disposition */
+#conteneur2Colonnes {
+    display: block !important;
+}
+
+#colonneGauche, #colonneDroite {
+    width:100%!important;
+    max-width:100%!important;
+}
+
+.separateur.secondaire {
+    border-bottom: 1px solid var(--couleur-filet-secondaire);
+}
+
+/* Éléments ayant le focus ou hover */
+:focus, :hover, :focus-within {
+    outline: 0;
+    box-shadow: none;    
+}
+
+a:focus, a:hover, a:focus-within {
+    text-decoration: inherit;
+}
+
+/* Hyperliens */
+a {
+    text-decoration: none !important;
+    color: #000!important;
+}
+
+.page-texte a  {
+    color: var(--couleur-liens) !important;
+    text-decoration: underline !important;
+}
+
+/* Zones déployables (ouvrir tout lors de l'impression) */
+.collapse {
+    display: block !important;
+    height: auto !important;
+}
+
+
+/*====================================================================================================*/
+/*  -20- Cartes de type section de base
+/*====================================================================================================*/
+.card.section-base {
+    page-break-inside: avoid;
+}
+
+.card.section-base .card-title {
+    color: #000;
+    border: 1px solid var(--couleur-filet-secondaire);
+    background-color: var(--couleur-filet-secondaire);
+}
+
+.icone-svg.chevron-haut, .icone-svg.chevron-bas,
+.icone-svg.chevron-haut-blanc, .icone-svg.chevron-bas-blanc {
+    display: none!important;
+}
+
+/*====================================================================================================*/
+/*  -25- Tableaux
+/*====================================================================================================*/
+th {
+    border-top: 1px solid var(--couleur-filet-secondaire) !important;
+    border-bottom: 1px solid var(--couleur-filet-secondaire) !important;
+    color: #000;
+}
+
+/*====================================================================================================*/
+/*  -99- À positionner
+/*====================================================================================================*/
+.form-group {
+    page-break-inside: avoid;
+}
+
+
+
+
+
+
+
+
+}

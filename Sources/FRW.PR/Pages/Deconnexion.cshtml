@@ -1,0 +1,24 @@
+﻿@*@page "{id}"*@
+@page "{SystemeAutorise:int?}/{id?}/{version?}/{ShortInstance?}"
+@model FRW.PR.Extra.Pages.Form.DeconnexionModel
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = "_Layout2Colonnes";
+}
+
+@section style{
+    <style>
+        #btnDeconnexion {
+            display: none;
+        }
+    </style>
+}
+
+@section colonneGauche{
+    <h2 tabindex="-1" class="titre-page">@Localizer["deconnexion.titrePage"]</h2>
+    <utd-avis type="succes">
+        <div slot="contenu">
+            @Localizer["deconnexion.texteAvisDeconnexionCompletee"]
+        </div>
+    </utd-avis>    
+}

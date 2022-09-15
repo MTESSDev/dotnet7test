@@ -1,0 +1,2322 @@
+﻿/*Les éléments débutants par Z doivent être ajoutés ou modifiés dans le css original de ECS */
+/*====================================================================================================*/
+/*  -Z01- Base contrôles
+/* ---------------------------------------------------------------------------------------------------*/
+/*  -Z03- Boutons
+/* ---------------------------------------------------------------------------------------------------*/
+/*  -Z10- Radio button et checkbox
+/* ---------------------------------------------------------------------------------------------------*/
+/*  -Z20A- Forms (Champs textes largeurs)
+/* ---------------------------------------------------------------------------------------------------*/
+/*  -21B- Infobulle (aide contextuelle)
+/* ---------------------------------------------------------------------------------------------------*/
+/*  -30- Navigation formulaire
+/* ---------------------------------------------------------------------------------------------------*/
+/*  -Z90- Ajustements pour règles SCG - À modifier dans fichier concerné
+/*====================================================================================================*/
+
+/* TODO À revoir dans ECS? Au moins pour p */
+body {
+    line-height: 1.2;
+}
+
+    body p {
+        line-height: 1.5;
+    }
+
+
+/*====================================================================================================*/
+/*  -Z01- Base contrôles
+/*====================================================================================================*/
+/* Reproduire tout ce qui est dans form-control */
+.formulate-input[data-classification=text] input, .formulate-input[data-classification=textarea] textarea,
+.formulate-input[data-classification=select] select {
+    border: 1px solid #858b93;
+}
+
+
+/* Reproduire tout ce qui est dans form-group */
+.formulate-input[data-classification=text], .formulate-input[data-classification=textarea],
+.formulate-input[data-classification=select], .formulate-input[data-classification=group],
+.formulate-input[data-classification=box][data-type=checkbox]:not(.formulate-input-group-item),
+.formulate-input[data-classification=file] {
+    margin-bottom: 32px; /* On applique le même style que la classe form-group de BS */
+}
+
+    /* Pas de margin bottom pour les champs hidden*/
+    .formulate-input[data-classification=text][data-type="hidden"] {
+        margin-bottom: 0;
+    }
+
+
+    .formulate-input[data-classification=group].repeatable-group {
+        margin-bottom: 64px; /*TODO valider avec Julie*/
+    }
+
+.formulate-input.group .card-body > .formulate-input:last-of-type {
+    margin-bottom: 0 !important; /* pas de margin bottom sur dernier contrôle d'un groupe non répétable */
+}
+
+
+/*====================================================================================================*/
+/*  -Z03- Boutons  /* TODO modifier dans ECS */
+/*====================================================================================================*/
+/* Boutons ECS */
+
+/* Vient du .btn de bootstrap */
+.formulate-input-group-add-more button {
+    display: inline-block;
+    font-weight: 400;
+    text-align: center;
+    vertical-align: middle;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-color: transparent;
+    border: 2px solid transparent;
+    font-size: 1rem;
+    border-radius: 0; /*override*/
+    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out
+}
+
+
+.formulate-input-group-add-more button {
+    line-height: 1rem;
+}
+
+    .formulate-input-group-add-more button:focus {
+        border: 2px solid var(--couleur-texte-base);
+    }
+
+    .formulate-input-group-add-more button {
+        background-color: #fff;
+        border: 2px solid var(--couleur-bouton-primaire);
+        color: var(--couleur-bouton-primaire);
+        font-family: 'OpenSans-Bold', sans-serif;
+        box-shadow: none;
+        border-color: var(--couleur-bouton-primaire);
+        outline: 0 !important;
+    }
+        
+    /* Comme boutons secondaires */
+        .formulate-input-group-add-more button:not([disabled]):hover, .formulate-input-group-add-more button:focus {
+            background-color: rgba(9, 87, 151, .16);
+        }
+
+        .formulate-input-group-add-more button:focus {
+            box-shadow: 0 0 0 2px #89bce5;
+            border-color: var(--couleur-texte-base);
+        }
+
+        .formulate-input-group-add-more button:focus {
+            background-color: rgba(9, 87, 151, 0.08);
+        }
+
+        .formulate-input-group-add-more button:disabled:hover {
+            cursor: none;
+        }
+
+/* BOuton de suppression d'élément dans instances de groupes */
+.group-repeatable-remove-container {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.formulate-input-group-repeatable-remove {
+    margin: -20px -12px;
+}
+
+
+
+/*====================================================================================================*/
+/*  -Z04- Zone de mise en évidence
+/*====================================================================================================*/
+.zone-evidence {
+    padding: 24px 16px;
+    background-color: var(--couleur-fond-gris);
+    margin-bottom: 32px;
+}
+
+.zone-evidence > *:last-child, .zone-evidence > *:last-child .formulate-input-wrapper {
+    margin-bottom: 0 !important;
+}
+
+
+.zone-evidence > *:first-child, .zone-evidence > *:first-child .formulate-input-wrapper {
+    margin-top: 0 !important;
+}
+
+/*====================================================================================================*/
+/*  -Z10- Radio button et checkbox
+/*====================================================================================================*/
+    /* --------------- Radios ET checkbox (Commun) --------------- */
+    .formulate-input[data-classification=box] .formulate-input-wrapper {
+        display: flex;
+        align-items: center;
+        margin-top: 16px;
+    }
+
+.formulate-input[data-classification=box].formulate-input-group-item:first-of-type .formulate-input-wrapper {
+    margin-top: 12px;
+}
+
+.formulate-input[data-classification=box] .formulate-input-element-decorator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    position: relative;
+}
+
+.formulate-input[data-classification=box] .formulate-input-element input:focus ~ .formulate-input-element-decorator {
+    /* TODO Ajouter variable dans ECS pour cette couleur et appliquer checkbox et radios */
+    background-color: #89bce5;
+}
+
+
+.formulate-input[data-classification=box] .formulate-input-element-decorator:before {
+    content: "";
+    display: block;
+    position: absolute;
+}
+
+.formulate-input[data-classification=box] .formulate-input-element-decorator:after {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border: 1px solid #808a9d;
+    background-color: #fff;
+}
+
+
+/* Radio et checkbox disabled */
+.formulate-input[data-classification=box] .formulate-input-element input:disabled ~ .formulate-input-element-decorator:after {
+    /* TODO Ajouter variable dans ECS pour cette couleur et appliquer checkbox et radios...  */
+    border: 1px solid #bfc4ce;
+}
+
+/* Focus checkbox et radios */
+.formulate-input[data-classification=box] .formulate-input-element input:focus ~ .formulate-input-element-decorator:after {
+    /* TODO Ajouter variable dans ECS pour cette couleur et appliquer checkbox et radios... */
+    border: 2px solid #5b6476;
+}
+
+/* Le vrai input est hors écran (radios et checkbox) */
+.formulate-input[data-classification=box] .formulate-input-element input {
+    position: absolute;
+    left: -999px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Labels radios et checkbox */
+.formulate-input[data-classification=box] label {
+    margin-bottom: 0;
+}
+
+.formulate-input[data-classification=box] label.formulate-input-label {
+    line-height: 20px;
+    margin-left: 8px;
+}
+
+.formulate-input[data-classification=group][data-type="checkbox"] label.formulate-input-label,
+.formulate-input[data-classification=group][data-type="radio"] label.formulate-input-label {
+    font-family: 'OpenSans-Regular';
+}
+
+/* --------------- Radio buttons --------------- */
+
+.formulate-input[data-classification=box] .formulate-input-element[data-type=radio] .formulate-input-element-decorator {
+    border-radius: 1em;
+}
+
+
+.formulate-input[data-classification=box] .formulate-input-element input[type=radio]:checked ~ .formulate-input-element-decorator:before {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='-4.5 -4.5 8 8'%3e%3ccircle r='3' fill='%231479cc'/%3e%3c/svg%3e");
+}
+
+.formulate-input[data-classification=box] .formulate-input-element[data-type=radio] .formulate-input-element-decorator:before {
+    width: 1rem;
+    height: 1rem;
+    background-repeat: no-repeat;
+}
+
+.formulate-input[data-classification=box] .formulate-input-element[data-type=radio] .formulate-input-element-decorator:after {
+    border-radius: 1em;
+}
+
+/* Checkbox */
+.formulate-input[data-classification=box] .formulate-input-element input[type=checkbox] ~ .formulate-input-element-decorator {
+    border-radius: 0;
+}
+
+    .formulate-input[data-classification=box] .formulate-input-element input[type=checkbox] ~ .formulate-input-element-decorator:before {
+        /* TODO obtenir la vraie image de crochet ici afin de respecter parfaitement les normes du SCG... Ça prend un oeil de lynx pour le voir cela dit...*/
+        height: 12px;
+        width: 12px;
+    }
+
+.formulate-input[data-classification=box] .formulate-input-element input[type=checkbox]:checked ~ .formulate-input-element-decorator:after {
+    background-color: var(--couleur-bleu);
+}
+
+
+.formulate-input[data-classification=box] .formulate-input-element input[type=checkbox]:checked ~ .formulate-input-element-decorator:before {
+    background-color: #fff;
+    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M8.76,56.2c-6.38-6.34,3.26-16,9.64-9.69L38,65.88,80.56,23.29c6.38-6.38,16.07,3.32,9.69,9.69L42.84,80.37a6.83,6.83,0,0,1-9.65,0Z"/></svg>');
+    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M8.76,56.2c-6.38-6.34,3.26-16,9.64-9.69L38,65.88,80.56,23.29c6.38-6.38,16.07,3.32,9.69,9.69L42.84,80.37a6.83,6.83,0,0,1-9.65,0Z"/></svg>')
+}
+
+
+
+/* ==== Personnalisations pour les groupes ==== */
+
+/* Label de groupe */
+.formulate-input[data-type="group"] > .formulate-input-wrapper > label {
+    margin-bottom: 16px;
+}
+
+/* Précision de groupe */
+.formulate-input[data-type="group"] > .formulate-input-wrapper > .precision {
+    margin-bottom: 16px;
+    margin-top: -12px;
+}
+
+.formulate-input.group > .formulate-input-wrapper > label {
+    display: none; /* Ne pas afficher le label d'un groupe non répétable */
+}
+
+/*====================================================================================================*/
+/*  -Z10A- Radio button affichés sous forme de boutons inline (nombres, adultes 1, 2, 1 et 2, etc. voir fin de la sections pour particularités)
+/*====================================================================================================*/
+
+.formulate-input.boutons-inline[data-classification=group][data-type=radio] >
+.formulate-input-wrapper > .formulate-input-element {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.formulate-input.boutons-inline[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box] .formulate-input-wrapper {
+    margin-top: 16px;
+    margin-right: 16px;
+    position: relative;
+}
+
+.formulate-input.boutons-inline[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box] .formulate-input-element[data-type=radio] .formulate-input-element-decorator {
+    width: 40px;
+    height: 40px;
+    border-radius: 0;
+    border: 1px solid #858b93;
+    cursor: pointer;
+}
+
+.formulate-input.boutons-inline[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box][data-type=radio] .formulate-input-label--after {
+    cursor: pointer;
+}
+
+.formulate-input.boutons-inline[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box] .formulate-input-element[data-type=radio] .formulate-input-element-decorator:before,
+.formulate-input.boutons-inline[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box] .formulate-input-element[data-type=radio] .formulate-input-element-decorator:after {
+    content: none;
+}
+
+.formulate-input.boutons-inline[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box] label.formulate-input-label {
+    text-align: center;
+    margin-left: 0;
+    position: absolute;
+}
+
+.boutons-inline .formulate-input[data-classification=box] label.formulate-input-label {
+    width: 100%;
+}
+
+
+/* Disabled */
+.formulate-input.boutons-inline[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box] .formulate-input-element input[type=radio]:disabled {
+    /* TODO Ajouter variable dans ECS pour cette couleur et appliquer checkbox et radios...  */
+    border: 1px solid #bfc4ce;
+}
+
+/* Focus */
+.formulate-input.boutons-inline[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box] .formulate-input-element input[type=radio]:focus ~ .formulate-input-element-decorator {
+    /* TODO Ajouter variable dans ECS pour cette couleur et appliquer checkbox et radios... */
+    border: 2px solid #5b6476;
+    outline: 3px solid #89bce5;
+    background-color: inherit;
+}
+
+/* Hover */
+.formulate-input.boutons-inline[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box] .formulate-input-wrapper:hover {
+    /* TODO Ajouter variable dans ECS pour cette couleur et appliquer checkbox et radios... */
+    background-color: var(--couleur-hover) !important;
+}
+
+
+/* Active */
+.formulate-input.boutons-inline[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box] .formulate-input-element input[type=radio]:checked ~ .formulate-input-element-decorator {
+    background-color: var(--couleur-bleu);
+}
+
+.formulate-input.boutons-inline[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box][data-type=radio][data-has-value=true] .formulate-input-label--after {
+    color: #fff;
+}
+
+/* Nombres */
+/* Largeur par défaut de 40px */
+
+/* md */
+.formulate-input.boutons-inline.md[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box] .formulate-input-element[data-type=radio] .formulate-input-element-decorator {
+    width: 120px;
+    padding: 16px;
+}
+
+/* lg */
+.formulate-input.boutons-inline.lg[data-classification=group][data-type=radio]
+.formulate-input[data-classification=box] .formulate-input-element[data-type=radio] .formulate-input-element-decorator {
+    width: 170px;
+    padding: 16px;
+}
+
+
+/*====================================================================================================*/
+/*  -Z10B- Radio button affichés sous forme de boutons inline (nombres)
+/*====================================================================================================*/
+
+/*====================================================================================================*/
+/*  -Z11- Instances de groupes
+/*====================================================================================================*/
+.instance-groupe {
+    margin-bottom: 32px;
+}
+
+.card.instance-groupe .card-title {
+    padding: 0;
+}
+
+    .card.instance-groupe .card-title a {
+        padding: 12px 16px;
+    }
+
+/*====================================================================================================*/
+/*  -Z20- Forms  
+/*====================================================================================================*/
+.zone-boutons button, .zone-boutons input[type="submit"] {
+    margin-right: 32px;
+    min-width: 144px; /*On veut les 3 boutons de bas de page de la même larger */
+}
+
+    .zone-boutons button:last-child, .zone-boutons input[type="submit"]:last-child {
+        margin-right: 0;
+    }
+
+select[data-placeholder-selected="true"] {
+    color: #647287;
+}
+
+/* Bordure des champs en erreur. TODO déterminer si on inclus dans css base ECS ou pas.*/
+.formulate-input:not([data-classification=group]):not([data-type=adresse])[data-is-showing-errors="true"] .form-control {
+    border-color: var(--couleur-erreur);
+    border-width: 2px;
+}
+
+/**/
+/* Bordure des champs adresse en erreur. Bordure autour du contrôle entier (le bloc gris) */
+.formulate-input[data-type=adresse][data-is-showing-errors=true] .formulate-input-element[data-type=adresse] {
+    border: 2px solid var(--couleur-erreur);
+}
+
+/* Contrôles sur une même ligne (inline) */
+@media (min-width: 576px) {
+    .inline {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+    }
+
+        .inline.no-wrap {
+            flex-wrap: nowrap;
+        }
+
+        .inline > * {
+            margin-right: 32px;
+        }
+
+            .inline > *:last-child {
+                margin-right: 0;
+            }
+}
+
+
+/*====================================================================================================*/
+/*  -Z20A- Forms (Boutons bas de page)  
+/*====================================================================================================*/
+.zone-boutons.bas-page {
+    margin-top: 80px;
+}
+
+@media (max-width: 540px) {
+
+    .zone-boutons.bas-page {
+        display: flex;
+        flex-direction: column;
+    }
+
+        .zone-boutons.bas-page button {
+            margin-bottom: 32px;
+            margin-right: 0;
+            width: 100%;
+        }
+
+            .zone-boutons.bas-page button:last-of-type {
+                margin-bottom: 0;
+            }
+}
+
+
+/*====================================================================================================*/
+/*  -Z20A- Forms (Champs textes largeurs)  
+/*====================================================================================================*/
+
+/*TODO les types ont été retirés aussi dans ECS [type="text"], on se fou du type en fait... on doit le retirer dans ECS, sauf pour largeur par défaut. */
+/* On applique une largeur xl à tous les contrôles de type texte par défaut */
+input[type="text"].form-control {
+    width: 528px;
+    max-width: 100%;
+}
+
+input[type="number"].form-control, input[type="date"].form-control {
+    width: auto;
+}
+
+/*Largeur minimale pour les champs de type date (requis car sinon sur mobile parfois beaucoup trop petit) */
+input[type="date"].form-control {
+    min-width: 156px;
+}
+
+/*Le xxl n'existe pas dans les règles du SCG, c'est ajouté */
+input.form-control.xxl {
+    width: 728px;
+}
+
+input.form-control.xl {
+    width: 528px;
+}
+
+
+input.form-control.lg {
+    width: 249px;
+}
+
+input.form-control.md, input[type="tel"].form-control {
+    width: 156px;
+}
+
+input.form-control.sm {
+    width: 63px;
+}
+
+
+@media (max-width: 560px) {
+
+    input[type="text"].form-control, input.form-control.xl {
+        width: 100%;
+    }
+}
+
+@media (max-width: 760px) {
+
+    input.form-control.xxl {
+        width: 100%;
+    }
+}
+
+
+
+/* Spécifique pour vue formulate */
+
+/* Largeur par défaut pour contrôles vue formulate */
+.inline .formulate-input, .formulate-input input.form-control {
+    width: 528px;
+    max-width: 100%;
+}
+
+    /* Largeur défaut type number */
+    .inline .formulate-input[data-type=number], .formulate-input[data-type=number] input.form-control, .formulate-input[data-type=date] input.form-control {
+        width: auto;
+    }
+
+    .inline .formulate-input.xxl, .formulate-input.xxl input.form-control {
+        width: 728px;
+    }
+
+    .inline .formulate-input.xl, .formulate-input.xl input.form-control {
+        width: 528px;
+    }
+
+    .inline .formulate-input.lg, .formulate-input.lg input.form-control {
+        width: 249px;
+    }
+
+    .inline .formulate-input.md, .formulate-input.md input.form-control, .formulate-input input[type="tel"].form-control {
+        width: 156px;
+    }
+
+    .inline .formulate-input.sm, .formulate-input.sm input.form-control {
+        width: 63px;
+    }
+
+
+.formulate-input.w-100 input.form-control {
+    width: 100% !important;
+}
+
+/* Limiter la largeur max des champs dates si affichés en inline afin d'éviter que les messages d'erreurs provoquent un affichage sur 2 lignes des contrôles */
+.inline .formulate-input[data-type="date"] {
+    max-width: 203px;
+}
+
+@media (max-width: 575px) {
+
+    .inline .formulate-input {
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 560px) {
+
+    .inline .formulate-input, .inline .formulate-input.xl, .formulate-input input.form-control, .formulate-input.xl input.form-control {
+        width: 100%;
+    }
+}
+
+@media (max-width: 760px) {
+
+    .inline .formulate-input.xxl, .formulate-input.xxl input.form-control {
+        width: 100%;
+    }
+}
+
+/*====================================================================================================*/
+/*  -21- Type de champ "nombre" (cumstom)
+/*====================================================================================================*/
+[data-type="nombre"] input[type="number"] {
+    display: inline-block;
+}
+
+[data-type="nombre"] .unite {
+}
+
+/*====================================================================================================*/
+/*  -21A- Type de champ "nombre" (cumstom) - Template montant
+/*====================================================================================================*/
+
+[data-type="nombre"].montant input[unite] {
+    text-align: right;
+}
+
+    /* Chrome, Safari, Edge, Opera */
+    [data-type="nombre"].montant input[unite]::-webkit-outer-spin-button, [data-type="nombre"].montant input[unite]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+/* Firefox */
+[data-type="nombre"].montant input[unite] {
+    -moz-appearance: textfield;
+}
+
+form.fr [data-type="nombre"].montant .unite.gauche {
+    display: none;
+}
+
+form.en [data-type="nombre"].montant .unite.droite {
+    display: none;
+}
+
+[data-type="nombre"].montant [data-type="nombre"].formulate-input-element {
+    display: flex;
+    position: relative;
+}
+
+[data-type="nombre"].montant .unite {
+    position: relative;
+    top: 0px;
+    padding: 0 8px;
+    background-color: var(--couleur-fond-gris);
+    height: 40px;
+    line-height: 39px;
+    border: 1px solid #858b93;
+    border-left: none;
+}
+
+    [data-type="nombre"].montant .unite.droite {
+        right: 26px;
+    }
+
+    [data-type="nombre"].montant .unite.gauche {
+        position: absolute;
+        left: 0px;
+        border-left: 1px solid #858b93;
+        border-right: none;
+    }
+
+form.fr [data-type="nombre"].montant input[unite] {
+    padding-right: 32px;
+}
+
+form.en [data-type="nombre"].montant input[unite] {
+    padding-left: 32px;
+}
+
+/* Ajustement position et hauteur unite si focus ou erreur sur le champ */
+[data-type="nombre"].montant:focus-within .unite, [data-type="nombre"].montant[data-is-showing-errors="true"] .unite {
+    top: 2px;
+    height: 36px;
+    line-height: 36px;
+}
+
+    [data-type="nombre"].montant:focus-within .unite.droite, [data-type="nombre"].montant[data-is-showing-errors="true"] .unite.droite {
+        right: 27px;
+    }
+
+    [data-type="nombre"].montant:focus-within .unite.gauche, [data-type="nombre"].montant[data-is-showing-errors="true"] .unite.gauche {
+        left: 2px;
+    }
+
+/*====================================================================================================*/
+/*  -21B- Infobulle (aide contextuelle)
+/*====================================================================================================*/
+/* Évite d'avoir une infobulle seule sur une ligne. Forcer l'affichage d'un infobulle avec indicateur champ obligatoire et dernier mot de libellé sur une nouvelle ligne.*/
+.conteneur-infobulle {
+    white-space: nowrap;
+}
+
+/*====================================================================================================*/
+/*  -30- Navigation formulaire
+/*====================================================================================================*/
+
+nav.etapes-form {
+    line-height: 1;
+}
+
+    nav.etapes-form.navbar {
+        padding: 0;
+    }
+
+    nav.etapes-form .navbar-toggler {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        border: 1px solid var(--couleur-filet-secondaire);
+        border-radius: 0;
+        font-size: inherit;
+        color: inherit;
+        font-family: 'OpenSans-Bold';
+        padding: 16px;
+        box-shadow: 0px 3px 6px rgba(34, 54, 84, 0.16);
+        min-height: 58px;
+    }
+
+    nav.etapes-form ul {
+        padding: 0;
+        list-style-type: none;
+        width: 100%;
+    }
+
+
+@media screen and (max-width: 991px) {
+
+    nav.etapes-form ul.niv1 {
+        margin-top: 16px;
+    }
+
+        nav.etapes-form ul.niv1 > li.sans-regroupement {
+            margin-left: 16px;
+        }
+
+    nav.etapes-form .sous-menu > a:after {
+        margin-left: 24px !important;
+    }
+}
+
+@media screen and (min-width: 992px) {
+    nav.etapes-form.navbar-expand-lg .navbar-toggler {
+        display: none;
+    }
+}
+
+
+
+nav.etapes-form .sous-menu > a {
+    color: inherit !important;
+    line-height: 21px;
+}
+
+
+nav.etapes-form .groupe {
+    font-family: 'OpenSans-Bold';
+    padding: 12px 16px;
+    border: 1px solid var(--couleur-filet-secondaire);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0px 3px 6px rgba(34, 54, 84, 0.16);
+}
+
+    nav.etapes-form .groupe .section-droite {
+        display: flex;
+        align-items: center;
+    }
+
+        nav.etapes-form .groupe .section-droite .indicateur-erreur {
+            width: 8px;
+            height: 8px;
+            display: block;
+            background-color: none;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+
+nav.etapes-form.mode-revision .groupe.contient-erreur .section-droite .indicateur-erreur {
+    background-color: var(--couleur-erreur);
+}
+
+nav.etapes-form .groupe.active {
+    background-color: #ECF2F7;
+    border: 1px solid #6B9AC1;
+    box-shadow: 0px 3px 6px rgba(9, 87, 151, 0.16);
+}
+
+nav.etapes-form .groupe:hover, nav.etapes-form .groupe:focus {
+    border: 1px solid #6B9AC1;
+}
+
+nav.etapes-form .groupe > .icone {
+    display: flex;
+    align-items: center;
+}
+
+nav.etapes-form ul > li > ul > li, nav.etapes-form ul > li.sans-regroupement {
+    padding: 16px 8px 16px 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-left: 14px;
+    margin-bottom: 8px;
+    /*    border-left: 1px solid var(--couleur-piv);*/
+}
+
+nav.etapes-form ul > li.sans-regroupement {
+    margin-left: 0;
+}
+
+/* Petite twist qui nous permet d'inverser la puce et le texte afin de pouvoir utiliser le selector de sibling et modifier couleur de fond de la puce sur hover/focus du lien */
+nav.etapes-form ul > li > ul > li *:last-child, nav.etapes-form ul > li.sans-regroupement *:last-child {
+    order: -1;
+}
+
+nav.etapes-form ul li .puce {
+    height: 32px;
+    width: 32px;
+    min-width: 32px;
+    display: block;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 1px solid var(--couleur-bleu);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--couleur-bleu);
+}
+
+
+
+nav.etapes-form ul li .texte a {
+    font-size: 14px;
+    color: var(--couleur-bleu);
+    line-height: 18px;
+}
+
+nav.etapes-form ul li .puce .utd-icone-svg {
+    margin-left: 0;
+    display: none;
+}
+
+nav.etapes-form ul li .puce .no-etape {
+    font-family: OpenSans-SemiBold;
+}
+
+nav.etapes-form.mode-revision ul li.contient-erreur .puce {
+    background-color: var(--couleur-erreur);
+    border-color: var(--couleur-erreur);
+}
+
+        /* Si en mode révision, on affiche l'icône X (Erreur) au lieu de l'avertissement (!) */
+        nav.etapes-form.mode-revision ul li.contient-erreur .puce .utd-icone-svg {
+            background-image: var(--url-0822-cross2-blanc);
+            min-width: 16px;
+            height: 16px;
+            display: block;
+        }
+
+nav.etapes-form ul li.sans-erreur .puce {
+    background-color: var(--couleur-texte-base);
+    border-color: var(--couleur-texte-base);
+}
+
+    nav.etapes-form ul li.sans-erreur .puce .utd-icone-svg {
+        background-image: var(--url-0821-check_blanc);
+        min-width: 16px;
+        height: 12px;
+        display: block;
+    }
+
+    nav.etapes-form ul li.sans-erreur .puce .no-etape, nav.etapes-form.mode-revision ul li.contient-erreur .puce .no-etape {
+        display: none;
+    }
+
+nav.etapes-form ul li.active .puce {
+    background-color: var(--couleur-piv) !important;
+    border-color: var(--couleur-piv) !important;
+    background-image: none !important;
+}
+
+    nav.etapes-form ul li.active .puce .no-etape {
+        color: #fff;
+        display: block !important;
+    }
+
+    nav.etapes-form ul li.active .puce .utd-icone-svg {
+        display: none !important;
+    }
+
+nav.etapes-form ul li .texte {
+    margin-left: 8px;
+}
+
+nav.etapes-form li > .puce:before {
+    position: absolute;
+    width: 4px;
+    height: calc(50% - 16px);
+    background-color: var(--couleur-bleu);
+    top: 0;
+    content: '';
+    border-radius: 8px 8px 0 0;
+}
+
+
+/* ==== Filets et couleur texte des puces ==== */
+
+/* Puce sans erreur (filet et couleur texte) */
+nav.etapes-form ul li.sans-erreur > .puce:before, nav.etapes-form ul li.sans-erreur > .puce:after {
+    background-color: var(--couleur-texte-base);
+}
+
+nav.etapes-form ul li.sans-erreur .texte a {
+    color: var(--couleur-texte-base);
+}
+
+
+/* Puce avec erreur (filet et couleur texte) */
+nav.etapes-form.mode-revision ul li.contient-erreur > .puce:before, nav.etapes-form.mode-revision ul li.contient-erreur > .puce:after {
+    background-color: var(--couleur-erreur);
+}
+
+nav.etapes-form.mode-revision ul li.contient-erreur .texte a {
+    color: var(--couleur-texte-base);
+}
+
+/* Puce active (filet et couleur texte) */
+nav.etapes-form ul li.active > .puce:before, nav.etapes-form ul li.active > .puce:after {
+    background-color: var(--couleur-piv) !important;
+}
+
+nav.etapes-form ul li.active .texte a {
+    color: var(--couleur-texte-base);
+    font-family: 'OpenSans-Bold';
+}
+
+/* ==== Survol des puces ==== */
+nav.etapes-form ul li:not(.active) a:hover {
+    color: var(--couleur-piv);
+}
+
+nav.etapes-form ul > li.sans-regroupement:hover, nav.etapes-form ul > li > ul > li:hover {
+    cursor: pointer;
+}
+
+    nav.etapes-form ul > li.sans-regroupement:hover a, nav.etapes-form ul > li > ul > li:hover a,
+    nav.etapes-form ul > li.sans-regroupement a:focus, nav.etapes-form ul > li > ul > li a:focus {
+        text-decoration: underline;
+        color: var(--couleur-piv) !important;
+    }
+
+    nav.etapes-form ul > li.sans-regroupement:hover .puce, nav.etapes-form ul > li.sans-regroupement:focus-within .puce,
+    nav.etapes-form ul > li > ul > li:hover .puce, nav.etapes-form ul > li > ul > li:focus-within .puce {
+        background-color: var(--couleur-bleu-pale);
+        border-color: var(--couleur-piv);
+        color: var(--couleur-piv);
+    }
+
+nav.etapes-form.mode-revision ul li.contient-erreur:hover .puce, nav.etapes-form.mode-revision ul li.contient-erreur:focus-within .puce {
+    background-color: var(--couleur-rouge-fonce);
+    border-color: var(--couleur-rouge-fonce);
+    border-width: 1px;
+}
+
+nav.etapes-form ul li.sans-erreur:hover .puce, nav.etapes-form ul li.sans-erreur:focus-within .puce {
+    background-color: var(--couleur-piv);
+    border-width: 1px;
+    border-color: var(--couleur-piv);
+}
+
+nav.etapes-form ul li.active:hover .puce, nav.etapes-form ul li.active:focus-within .puce {
+    background-color: var(--couleur-piv);
+    border-color: var(--couleur-piv);
+    border-width: 1px;
+    color: #fff;
+}
+
+nav.etapes-form ul > li.sans-regroupement:hover .puce:before, nav.etapes-form ul > li.sans-regroupement:hover .puce:after,
+nav.etapes-form ul > li.sans-regroupement:focus-within .puce:before, nav.etapes-form ul > li.sans-regroupement:focus-within .puce:after,
+nav.etapes-form ul > li > ul > li:hover .puce:before, nav.etapes-form ul > li > ul > li:hover .puce:after,
+nav.etapes-form ul > li > ul > li:focus-within .puce:before, nav.etapes-form ul > li > ul > li:focus-within .puce:after {
+    background-color: var(--couleur-piv);
+}
+
+nav.etapes-form.mode-revision ul li.contient-erreur:hover .puce:before, nav.etapes-form.mode-revision ul li.contient-erreur:hover .puce:after,
+nav.etapes-form.mode-revision ul li.contient-erreur:focus-within .puce:before, nav.etapes-form.mode-revision ul li.contient-erreur:focus-within .puce:after {
+    background-color: var(--couleur-rouge-fonce);
+}
+
+nav.etapes-form ul li.active:hover .puce:before, nav.etapes-form ul li.active:hover .puce:after,
+nav.etapes-form ul li.active:focus-within .puce:before, nav.etapes-form ul li.active:focus-within .puce:after {
+    background-color: var(--couleur-piv);
+}
+
+
+nav.etapes-form .sous-menu li:first-of-type > .puce:before {
+    border-radius: 0;
+}
+
+nav.etapes-form .sous-menu li:last-of-type {
+    margin-bottom: 0;
+}
+
+nav.etapes-form .sous-menu > a:after {
+    position: relative;
+    width: 4px;
+    height: 0;
+    background-color: var(--couleur-bleu);
+    top: 0;
+    content: '';
+    margin-left: 28px;
+    display: block;
+    transition: height .35s ease-out;
+    border-radius: 0;
+}
+
+nav.etapes-form .sous-menu > a.collapsed:after {
+    height: 16px;
+}
+
+
+nav.etapes-form .sous-menu:last-of-type > a:after {
+    content: none;
+}
+
+/* Puces (after) */
+nav.etapes-form li > .puce:after {
+    position: absolute;
+    width: 4px;
+    height: calc(50% - 16px);
+    background-color: var(--couleur-bleu);
+    bottom: 0;
+    content: '';
+    border-radius: 0 0 8px 8px;
+}
+
+/* Dernière puce d'un sous-menu (after) */
+nav.etapes-form .sous-menu li:last-of-type > .puce:after {
+    border-radius: 0;
+}
+
+/* Dernière puce du dernier sous-menu (after) */
+nav.etapes-form .sous-menu:last-of-type li:last-of-type > .puce:after {
+    height: calc(50% - 16px);
+    bottom: 0;
+    border-radius: 0 0 8px 8px;
+}
+
+
+
+nav.etapes-form ul.niv1 > li.sans-regroupement:first-of-type > .puce:before {
+    width: 0;
+}
+
+
+nav.etapes-form ul.niv1 > li.sans-regroupement:last-of-type > .puce:after,
+nav.etapes-form ul.niv1 > li:last-of-type ul.niv2 > li:last-of-type > .puce:after {
+    width: 0;
+}
+
+
+
+@media screen and (max-width: 991px) {
+
+    nav.etapes-form ul.niv1 ul {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    nav.etapes-form .groupe {
+        padding: 16px;
+    }
+
+        nav.etapes-form .groupe, nav.etapes-form .groupe.active {
+            box-shadow: none;
+        }
+
+    nav.etapes-form ul li .puce .no-etape {
+        font-size: 14px;
+    }
+
+    nav.etapes-form ul > li > ul > li, nav.etapes-form ul > li.sans-regroupement {
+        padding: 8px 8px 8px 0px;
+    }
+
+    nav.etapes-form ul > li > ul.niv2 > li:first-of-type {
+        margin-top: 8px;
+    }
+
+    nav.etapes-form ul > li > ul.niv2 > li:last-of-type {
+        margin-bottom: 8px;
+    }
+
+    nav.etapes-form ul li .puce {
+        height: 24px;
+        width: 24px;
+        min-width: 24px;
+    }
+
+    nav.etapes-form li > .puce:before {
+        position: absolute;
+        width: 2px;
+        height: calc(50% - 12px);
+    }
+
+    nav.etapes-form ul.niv2 > li:first-of-type > .puce:before {
+        top: -8px;
+        height: calc(50% - 4px);
+    }
+
+    nav.etapes-form li > .puce:after {
+        position: absolute;
+        width: 2px;
+        height: calc(50% - 12px);
+    }
+
+    nav.etapes-form ul.niv2 > li:last-of-type > .puce:after {
+        top: 32px;
+        height: calc(50% - 4px);
+    }
+
+    nav.etapes-form.mode-revision ul li.contient-erreur .puce .utd-icone-svg {
+        min-width: 6px;
+        height: 15px;
+        display: block;
+    }
+
+    /* Si en mode révision, on affiche l'icône X (Erreur) au lieu de l'avertissement (!) */
+    nav.etapes-form.mode-revision ul li.contient-erreur .puce .utd-icone-svg {
+        min-width: 14px;
+        height: 14px;
+    }
+
+    nav.etapes-form ul li.sans-erreur .puce .utd-icone-svg {
+        min-width: 14px;
+        height: 10px;
+    }
+
+
+    .groupe > .icone.user:before {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        margin-right: 8px;
+        margin-left: -2px;
+    }
+}
+
+@media screen and (min-width: 390px) and (max-width: 991px) {
+    nav.etapes-form .navbar-toggler, nav.etapes-form ul.niv1 {
+        min-width: 375px;
+        max-width: 50%;
+    }
+}
+
+@media screen and (max-width: 375px) {
+    nav.etapes-form .navbar-toggler, nav.etapes-form ul.niv1 {
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+/*====================================================================================================*/
+/*  -31- Notre type custom "fichier"
+/*====================================================================================================*/
+
+.formulate-input-element[data-type="customfile"] {
+    padding: 24px 16px;
+    background-color: var(--couleur-fond-gris);
+    max-width: var(--largeur-max-zone-texte);
+    word-break: break-word;
+}
+
+.formulate-input[data-classification=file] .formulate-input-upload-area .formulate-file-add {
+    position: relative;
+    margin-top: 32px;
+}
+
+.formulate-input[data-classification=file] .formulate-input-upload-area > .formulate-file-add {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.formulate-input[data-classification=file] .formulate-input-upload-area .formulate-file-add:hover {
+    cursor: pointer;
+}
+
+.formulate-input[data-classification=file] .formulate-file-add:focus-within {
+    background-color: rgba(9, 87, 151, .16);
+    box-shadow: 0 0 0 2px #89bce5;
+    border-color: var(--couleur-texte-base);
+}
+
+.formulate-input[data-classification=file] .formulate-input-upload-area .formulate-file-add input,
+.formulate-input[data-classification=file] .formulate-input-upload-area input.formulate-file-add-input {
+    display: block;
+    opacity: 0;
+    appearance: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.formulate-input-upload-area ul {
+    padding: 0;
+    list-style: none;
+    margin: 0;
+}
+
+.formulate-file {
+    display: flex;
+    border-top: 1px solid var(--couleur-texte-base);
+    padding: 16px 0;
+    min-height: 88px;
+}
+
+.formulate-files li:last-of-type .formulate-file {
+    border-bottom: 1px solid var(--couleur-texte-base);
+}
+
+.formulate-file-image-preview {
+    width: 80px;
+    min-width: 80px;
+    height: 80px;
+    min-height: 80px;
+    position: relative;
+}
+
+    .formulate-file-image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: width .5s ease-in-out;
+    }
+
+.formulate-file-name {
+    font-family: OpenSans-SemiBold;
+}
+
+.formulate-file-error {
+    margin-top: 8px;
+    color: var(--couleur-erreur);
+}
+
+.formulate-file-image-preview, .formulate-file-name {
+    margin-right: 16px;
+}
+
+    .formulate-file-image-preview .utd-icone-svg.erreur {
+        background-image: var(--url-ico-erreur);
+        min-width: 48px;
+        height: 48px;
+        margin: 0 16px;
+    }
+
+
+
+.formulate-file-image-preview, .formulate-file-info, .formulate-file-name, .formulate-file-error, .formulate-file-remove {
+    font-size: var(--tc-16-14-val);
+    display: block;
+}
+
+.formulate-file-remove {
+    min-width: 160px;
+    width: 160px;
+    text-align: center;
+}
+
+    .formulate-file-remove button {
+        margin-top: -16px;
+    }
+
+.formulate-file-info {
+    width: calc(100% - 252px); /* 252px doit être égal 100% - (largeur col1(ordre) + largeur col2(image) + les margins col1, col2 et col3 + largeur col3) afin de garantir un visuel identique de chaque ligne (comme un display table, mais là on va pouvoir wrapper le bouton de suppression en petit mobile, ce qui ne fonctionne pas en table)*/
+}
+
+.ordre-affiche .formulate-file-info {
+    width: calc(100% - 284px); /* 284px doit être égal 100% - (largeur col1(ordre) + largeur col2(image) + les margins col1, col2 et col3 + largeur col3) afin de garantir un visuel identique de chaque ligne (comme un display table, mais là on va pouvoir wrapper le bouton de suppression en petit mobile, ce qui ne fonctionne pas en table)*/
+}
+
+
+
+.formulate-input[data-classification=file] .formulate-files .formulate-file-progress[data-just-finished] {
+    width: 1.25em;
+    height: 1.25em;
+}
+
+    .formulate-input[data-classification=file] .formulate-files .formulate-file-progress[data-just-finished]:before {
+        transition: transform .25s .2s,opacity .25s .2s;
+        transform: scale(1);
+        opacity: 1;
+    }
+
+.formulate-input[data-classification=file] .formulate-files .formulate-file-progress:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: block;
+    opacity: 0;
+    transform: scale(.08);
+    background-color: #fff;
+    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M8.76,56.2c-6.38-6.34,3.26-16,9.64-9.69L38,65.88,80.56,23.29c6.38-6.38,16.07,3.32,9.69,9.69L42.84,80.37a6.83,6.83,0,0,1-9.65,0Z"/></svg>');
+    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M8.76,56.2c-6.38-6.34,3.26-16,9.64-9.69L38,65.88,80.56,23.29c6.38-6.38,16.07,3.32,9.69,9.69L42.84,80.37a6.83,6.83,0,0,1-9.65,0Z"/></svg>');
+    -webkit-mask-size: 77%;
+    mask-size: 77%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    z-index: 3;
+}
+
+.formulate-input[data-classification=file] .formulate-files .formulate-file-progress {
+    display: inline-block;
+    background-color: var(--couleur-filet-secondaire);
+    height: .3em;
+    border-radius: 1.25em;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    transition: height .25s,width .25s,flex-basis .25s;
+    z-index: 2;
+    top: 2px;
+}
+
+    .formulate-input[data-classification=file] .formulate-files .formulate-file-progress[data-is-finished] {
+        transition: height .25s,width .25s,left .25s,top,.25s,border-radius .25s;
+        width: .3em;
+        border-radius: 0 .23em .23em 0;
+    }
+
+        .formulate-input[data-classification=file] .formulate-files .formulate-file-progress[data-is-finished]:before {
+            transition: opacity .1s;
+            opacity: 0;
+        }
+
+    .formulate-input[data-classification=file] .formulate-files .formulate-file-progress .formulate-file-progress-inner {
+        background-color: var(--couleur-bouton-primaire);
+        width: 1%;
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        top: 0;
+        z-index: 2;
+    }
+
+    .formulate-input[data-classification=file] .formulate-files .formulate-file-progress:before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: block;
+        opacity: 0;
+        transform: scale(.08);
+        background-color: #fff;
+        -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M8.76,56.2c-6.38-6.34,3.26-16,9.64-9.69L38,65.88,80.56,23.29c6.38-6.38,16.07,3.32,9.69,9.69L42.84,80.37a6.83,6.83,0,0,1-9.65,0Z"/></svg>');
+        mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M8.76,56.2c-6.38-6.34,3.26-16,9.64-9.69L38,65.88,80.56,23.29c6.38-6.38,16.07,3.32,9.69,9.69L42.84,80.37a6.83,6.83,0,0,1-9.65,0Z"/></svg>');
+        -webkit-mask-size: 77%;
+        mask-size: 77%;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        z-index: 3;
+    }
+
+@media screen and (max-width: 567px) {
+    .formulate-file {
+        flex-wrap: wrap;
+        padding-bottom: 0;
+    }
+}
+
+@media screen and (max-width: 567px) {
+    .formulate-file-info {
+        margin-right: 0;
+        width: calc(100% - 96px);
+    }
+
+    .ordre-affiche .formulate-file-info {
+        width: calc(100% - 128px);
+    }
+
+    .formulate-file-name {
+        margin-right: 0;
+    }
+
+    .formulate-file-remove {
+        width: 160px;
+        min-width: 160px;
+        min-height: 54px;
+        text-align: left;
+        margin: 0;
+    }
+
+    .ordre-affiche .formulate-file-remove {
+        width: 160px;
+        min-width: 160px;
+        min-height: 54px;
+        text-align: left;
+        margin: 0 0 0 28px;
+    }
+
+    .formulate-file-remove button {
+        margin-top: 0;
+        margin-left: -16px;
+        padding: 16px;
+    }
+
+    .formulate-input[data-classification=file] .formulate-files .formulate-file-progress {
+        top: 16px;
+    }
+}
+
+/*====================================================================================================*/
+/*  -40- Champ personnalisé "adresse"
+/*====================================================================================================*/
+
+.formulate-input-element[data-type="adresse"] {
+    padding: 24px 16px;
+    background-color: var(--couleur-fond-gris);
+    max-width: var(--largeur-max-zone-texte);
+    word-break: break-word;
+}
+
+    .formulate-input-element[data-type="adresse"] > .formulate-input[data-type="group"] {
+        margin-bottom: 0;
+    }
+
+[data-type="adresse"] .conteneur-recherche .formulate-input-element {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+[data-type="adresse"] .conteneur-recherche input {
+    margin-right: 16px;
+}
+
+
+[data-type="adresse"] .instructions-modifier-adresse {
+    margin-top: 16px;
+}
+
+    [data-type="adresse"] .instructions-modifier-adresse.rue-non-trouvee {
+        margin-top: -16px;
+        margin-bottom: 0;
+    }
+
+        [data-type="adresse"] .instructions-modifier-adresse.rue-non-trouvee .texte-erreur {
+            margin-bottom: 32px;
+            color: var(--couleur-erreur);
+        }
+
+    [data-type="adresse"] .instructions-modifier-adresse .boutons {
+        display: block;
+        margin-top: 8px;
+    }
+
+    [data-type="adresse"] .instructions-modifier-adresse .texte-entre-boutons {
+        line-height: 24px;
+        display: block;
+        margin: 0 8px;
+    }
+
+@media screen and (max-width: 360px) {
+
+    [data-type="adresse"] .conteneur-recherche .formulate-input-element {
+        display: block;
+    }
+
+    [data-type="adresse"] .conteneur-recherche input {
+        margin-right: 0;
+    }
+
+    [data-type="adresse"] .conteneur-recherche button {
+        margin-top: 16px;
+    }
+}
+
+@media screen and (min-width: 425px) {
+    .conteneur-nocivique-app {
+        display: flex;
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+        .conteneur-nocivique-app .nocivique {
+            max-width: 188px;
+        }
+
+            .conteneur-nocivique-app .nocivique input {
+                margin-right: 32px;
+            }
+
+    [data-type="adresse"] .instructions-modifier-adresse .boutons {
+        display: flex;
+    }
+}
+
+[data-type="adresse"] .adresse-complete {
+    position: relative;
+    padding: 24px 16px;
+    background-color: rgba(188, 218, 154, .5);
+}
+
+    [data-type="adresse"] .adresse-complete button.modifier {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        padding: 7px;
+    }
+
+    [data-type="adresse"] .adresse-complete button.modifier .utd-icone-svg.nouvelle-recherche {
+        min-width: 28px;
+        height: 28px;
+    }
+
+    [data-type="adresse"] .adresse-complete.erreur {
+        padding: 24px 16px;
+        background-color: rgba(248, 230, 154, .5)
+    }
+
+        [data-type="adresse"] .adresse-complete.erreur a.champ-erreur {
+            color: var(--couleur-erreur);
+            text-decoration: underline;
+        }
+
+            [data-type="adresse"] .adresse-complete.erreur a.champ-erreur:hover, [data-type="adresse"] .adresse-complete.erreur a.champ-erreur:focus {
+                text-decoration: none;
+            }
+
+    [data-type="adresse"] .adresse-complete .libelle {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+        [data-type="adresse"] .adresse-complete .libelle .utd-icone-svg {
+            margin-right: 8px;
+        }
+
+    [data-type="adresse"] .adresse-complete .label {
+        margin-bottom: 0;
+    }
+
+    [data-type="adresse"] .adresse-complete .utd-icone-svg {
+        min-width: 24px;
+        height: 24px;
+    }
+
+    [data-type="adresse"] .adresse-complete > span {
+        display: block;
+    }
+
+    [data-type="adresse"] .adresse-complete .adresse {
+        font-weight: 500;
+        margin-top: 8px;
+        font-size: 0px;
+    }
+
+        /*Petite twist pour éviter les espaces ajoutés entre les spans au render*/
+        [data-type="adresse"] .adresse-complete .adresse * {
+            font-size: 1rem;
+        }
+
+[data-type="adresse"] .saisie-manuelle {
+    margin-top: 16px;
+}
+
+
+/*====================================================================================================*/
+/*  -70- Redéfinitions par rapport ECS
+/*====================================================================================================*/
+
+.zone-menu-identification {
+    min-height: 80px;
+}
+
+.conteneur-menu-identification {
+    min-height: 0;
+}
+
+.conteneur-entete .espaceur-conteneurs:first-of-type {
+    height: 24px;
+}
+
+.conteneur-entete .espaceur-conteneurs:last-of-type {
+    height: 32px;
+}
+
+/*====================================================================================================*/
+/*  -82- Select2
+/*====================================================================================================*/
+
+/* Largeur automatique pour select2 (évite que le texte d'une pill défonce) */
+.select2-container.select2-container--bootstrap4 {
+    width: auto !important;
+}
+
+/* form-group pour select2 */
+.select2-hidden-accessible.form-group + .select2-container.select2-container--bootstrap4 {
+    margin-bottom: 32px;
+}
+
+
+
+.select2-container--bootstrap4 .select2-selection--multiple .select2-selection__rendered {
+    padding: 0 8px 4px 8px;
+}
+
+
+    .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__rendered .select2-search__field {
+        margin-top: 8px;
+    }
+
+.select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice {
+    background-color: #dae6f0;
+    border: 1px solid #dae6f0;
+    border-radius: 0;
+    color: var(--couleur-liens);
+    padding: 8px 12px;
+    height: auto;
+    line-height: 1.4;
+    margin-top: 8px;
+    word-break: break-word; /* TODO changer dans ECS */
+}
+
+    .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice:hover,
+    .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice:focus {
+        border: 1px solid #6991d0;
+    }
+
+
+.select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice__remove {
+    line-height: 1;
+    margin: 0;
+    padding-left: 0;
+    padding-right: 4px;
+}
+
+input.select2-search__field:disabled {
+    background-color: #fff;
+}
+
+/*====================================================================================================*/
+/*  -Z89- Contenu extensible 
+/*====================================================================================================*/
+/*---- Liens plus ou moins de détails ----*/
+.developper, .reduire {
+    display: none;
+}
+
+a.collapsed .developper, a:not(.collapsed) .reduire {
+    display: inline-block;
+}
+
+.contenu-extensible.entete a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.contenu-extensible a.collapsed .utd-icone-svg, .contenu-extensible a.collapsed .developper .utd-icone-svg {
+    transform: rotate(-180deg);
+}
+
+/*====================================================================================================*/
+/*  -Z90- Ajustements pour règles SCG - À modifier dans fichier concerné
+/*====================================================================================================*/
+
+.form-control {
+    height: 40px;
+}
+
+
+.icone-champ-requis {
+    font-size: 1rem;
+    vertical-align: top;
+    font-family: OpenSans-Bold;
+}
+
+
+input.form-control:focus, select.form-control:focus {
+    outline: 3px solid #89bce5;
+    border: 2px solid #5b6476;
+}
+
+/*TODO ATTENTION ici doit s'appliquer à des pages AVEC un menu à gauche... pas pour nos autres pages 2 colonnes */
+.contenu-principal-gauche #colonneDroite, .contenu-principal-droite #colonneGauche {
+    width: 100%;
+    max-width: 288px;
+}
+
+
+@media screen and (max-width: 991px) {
+    .contenu-principal-gauche #colonneDroite, .contenu-principal-droite #colonneGauche {
+        max-width: 100%;
+    }
+}
+
+
+/*====================================================================================================*/
+/*  -Z91- Ajustements pour règles SCG - Désaccord / Questionnements
+/*====================================================================================================*/
+/*
+form .input-validation-error, form .input-validation-error + .note-editor {
+    border-color: var(--couleur-erreur);
+    border-width: 2px; /* Ici devrait être 3px!  TROP GROS! 
+}*/
+
+
+
+/* --------------- Messages d'erreurs sur champs --------------- */
+/* Selon normes, 16px BOLD. */
+/* Il me semble que bold c'est TRÈS exagéré... */
+/* Réduire à 14px? */
+/*form .field-validation-error {
+    font-family: 'OpenSans-SemiBold';
+}
+*/
+
+
+/*====================================================================================================*/
+/*  -Z91- Ajustements ECS
+/*====================================================================================================*/
+.icone-champ-requis {
+    line-height: 1;
+}
+
+/*====================================================================================================*/
+/*  -92- Animations
+/*====================================================================================================*/
+/* Fond qui fade pour indiquer un élément en chargement */
+@keyframes fond-element-chargement {
+    0% {
+        opacity: .1;
+    }
+
+    50% {
+        opacity: .25;
+    }
+
+    100% {
+        opacity: .1;
+    }
+}
+
+.fond-element-chargement {
+    display: block;
+    background-color: #444;
+    height: 100%;
+    width: 100%;
+    opacity: .1;
+    animation: fond-element-chargement 1.5s infinite;
+}
+
+/*====================================================================================================*/
+/*  -93- Bloc de code
+/*====================================================================================================*/
+.bloc-code {
+    position: relative;
+}
+
+.bloc-code > pre {
+    margin-bottom: 64px;
+    border-radius: 6px;
+}
+
+.bloc-code .texte-confirmation-copie {
+    display: inline-block;
+    position: absolute;
+    color: #fff;
+    top: 20px;
+    right: 66px;
+    font-weight: 700;
+    opacity: 0;
+    background-color: rgb(28, 27, 27);
+    transition: opacity .5s ease-in-out;
+}
+
+.bloc-code .texte-confirmation-copie.visible {
+    opacity: 1;
+}
+
+.bloc-code button {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+}
+
+.bloc-code .utd-btn.secondaire:not([disabled]):hover, pre.bloc-code .utd-btn.secondaire:not([disabled]):focus {
+    background-color: rgba(255,255,255, 0.85);
+    box-shadow: 0 0 0 2px #4a98d9;
+}
+
+.bloc-code .utd-btn.secondaire:active {
+    background-color: rgba(255,255,255, 1);
+    box-shadow: 0 0 0 2px #4a98d9;
+}
+/*====================================================================================================*/
+/*  -99- À positionner
+/*====================================================================================================*/
+    .card.section-secondaire {
+        border: 0;
+    }
+
+    .card.section-secondaire .card-title {
+        border: 1px solid var(--couleur-filet-secondaire);
+        background-color: var(--couleur-fond-gris);
+    }
+
+    .card.section-secondaire .card-title:focus-within {
+        outline: 2px solid #89bce5;
+        border: 2px solid #5b6476;
+        margin-bottom: 2px;
+        margin-left: -1px;
+    }
+
+    .card.section-secondaire .card-title:focus-within + .collapse .card-body {
+        padding-top: 22px;
+    }
+
+    .card.section-secondaire .card-title a:focus {
+        outline: 0;
+        border: 0;
+    }
+
+    .card.section-secondaire .card-body {
+        border: 1px solid var(--couleur-filet-secondaire);
+        border-top: 0;
+    }
+
+.card-title h1, .card-title h2, .card-title h3, .card-title h4, .card-title h5, .card-title h6 { /* TODO à modifier dans ECS */
+    margin: 0;
+}
+
+/*====================================================================================================*/
+/*  -100- À positionner
+/*====================================================================================================*/
+[v-cloak] {
+    display: none !important;
+}
+
+#nomSectionCourante {
+    font-size: 14px;
+    color: #4E5E76;
+    display: block;
+    font-family: 'OpenSans-Regular', sans-serif;
+}
+
+h2.titre-etape-courante {
+    font-family: 'Roboto-Medium';
+    margin-top: 0;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--couleur-filet-secondaire);
+}
+
+.titre-etape-courante:focus {
+    outline: 0 !important;
+}
+
+h2.titre-page {
+    margin-top: 0;
+    margin-bottom: 32px;
+}
+
+select.form-control {
+    max-height: 40px;
+    height: 40px;
+    padding: 0.375rem 8px;
+}
+
+.formulate-input-errors {
+    word-break: break-word;
+    margin: 0;
+    padding: 0!important;
+}
+
+li.formulate-input-error {
+    display: block;
+}
+
+.image-form {
+    margin-bottom: 32px;
+}
+
+    .image-form img {
+        max-width: 100%;
+    }
+
+/*====================================================================================================*/
+/*  -120- Table (bordure ligne du bas seulement)
+/*====================================================================================================*/
+.table.bordure-ligne thead, .table.bordure-ligne tbody, .table.bordure-ligne th, .table.bordure-ligne tbody td {
+    border: 0;
+}
+
+.table.bordure-ligne thead th {    
+    padding: 16px 8px;
+}
+
+.table.bordure-ligne tbody td {
+    border-bottom: 1px solid var(--couleur-filet-secondaire);
+    padding: 16px 8px;
+}
+
+@media screen and (min-width: 576px) {
+    .table.bordure-ligne thead th, .table.bordure-ligne thead td {
+        padding: 16px;
+    }
+}
+
+
+/*====================================================================================================*/
+/*  -121- Table pj-manquantes
+/*====================================================================================================*/
+table.table.pj-manquantes tbody td {
+    padding: 0;
+}
+
+table.table.pj-manquantes tbody td a {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px 8px;
+}
+
+table.table.pj-manquantes tbody td a .utd-icone-svg {
+    margin-left: 16px;
+    transform: rotate(45deg)
+}
+
+@media screen and (min-width: 576px) {
+    table.table.pj-manquantes tbody td a {
+        padding: 16px;
+    }
+}
+
+
+/*====================================================================================================*/
+/*  -800- SPRITES
+/*====================================================================================================*/
+/* Ajouter les sprites crochet-bleu-texte, check-blanc, exlamation-blanc, question */
+/* Pour raison inconnue, dans ce projet il faut réajuster la taille des icônes. Il faudra revérifier une fois dans ECS. */
+.utd-icone-svg.md.chevron-haut-texte {
+    height: 12px;
+}
+
+/*====================================================================================================*/
+/*  -900- Spécifique au 3003
+/*====================================================================================================*/
+.groupe > .icone:before {
+    content: "";
+    width: 32px;
+    height: 32px;
+    background-size: 100% auto;
+    min-width: 32px;
+    background-repeat: no-repeat;
+    background-position: center;
+    display: inline-block;
+    margin-right: 8px;
+    margin-left: -2px;
+}
+
+@media screen and (max-width: 991px) {
+    .groupe > .icone:before {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        margin-left: -4px;
+    }
+
+    .icone.clipboard-check:before {
+        margin-left: -3px;
+    }
+}
+
+
+/*!
+ * Cropper.js v1.5.12
+ * https://fengyuanchen.github.io/cropperjs
+ *
+ * Copyright 2015-present Chen Fengyuan
+ * Released under the MIT license
+ *
+ * Date: 2021-06-12T08:00:11.623Z
+ */ .cropper-container {
+    direction: ltr;
+    font-size: 0;
+    line-height: 0;
+    position: relative;
+    -ms-touch-action: none;
+    touch-action: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none
+}
+
+    .cropper-container img {
+        image-orientation: 0deg;
+        display: block;
+        height: 100%;
+        max-height: none !important;
+        max-width: none !important;
+        min-height: 0 !important;
+        min-width: 0 !important;
+        width: 100%
+    }
+
+.cropper-canvas, .cropper-crop-box, .cropper-drag-box, .cropper-modal, .cropper-wrap-box {
+    bottom: 0;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0
+}
+
+.cropper-canvas, .cropper-wrap-box {
+    overflow: hidden
+}
+
+.cropper-drag-box {
+    background-color: #fff;
+    opacity: 0
+}
+
+.cropper-modal {
+    background-color: #000;
+    opacity: .5
+}
+
+.cropper-view-box {
+    display: block;
+    height: 100%;
+    outline: 1px solid #39f;
+    outline-color: rgba(51,153,255,.75);
+    overflow: hidden;
+    width: 100%
+}
+
+.cropper-dashed {
+    border: 0 dashed #eee;
+    display: block;
+    opacity: .5;
+    position: absolute
+}
+
+    .cropper-dashed.dashed-h {
+        border-bottom-width: 1px;
+        border-top-width: 1px;
+        height: 33.33333%;
+        left: 0;
+        top: 33.33333%;
+        width: 100%
+    }
+
+    .cropper-dashed.dashed-v {
+        border-left-width: 1px;
+        border-right-width: 1px;
+        height: 100%;
+        left: 33.33333%;
+        top: 0;
+        width: 33.33333%
+    }
+
+.cropper-center {
+    display: block;
+    height: 0;
+    left: 50%;
+    opacity: .75;
+    position: absolute;
+    top: 50%;
+    width: 0
+}
+
+    .cropper-center:after, .cropper-center:before {
+        background-color: #eee;
+        content: " ";
+        display: block;
+        position: absolute
+    }
+
+    .cropper-center:before {
+        height: 1px;
+        left: -3px;
+        top: 0;
+        width: 7px
+    }
+
+    .cropper-center:after {
+        height: 7px;
+        left: 0;
+        top: -3px;
+        width: 1px
+    }
+
+.cropper-face, .cropper-line, .cropper-point {
+    display: block;
+    height: 100%;
+    opacity: .1;
+    position: absolute;
+    width: 100%
+}
+
+.cropper-face {
+    background-color: #fff;
+    left: 0;
+    top: 0
+}
+
+.cropper-line {
+    background-color: #39f
+}
+
+    .cropper-line.line-e {
+        cursor: ew-resize;
+        right: -3px;
+        top: 0;
+        width: 5px
+    }
+
+    .cropper-line.line-n {
+        cursor: ns-resize;
+        height: 5px;
+        left: 0;
+        top: -3px
+    }
+
+    .cropper-line.line-w {
+        cursor: ew-resize;
+        left: -3px;
+        top: 0;
+        width: 5px
+    }
+
+    .cropper-line.line-s {
+        bottom: -3px;
+        cursor: ns-resize;
+        height: 5px;
+        left: 0
+    }
+
+.cropper-point {
+    background-color: #39f;
+    height: 5px;
+    opacity: .75;
+    width: 5px
+}
+
+    .cropper-point.point-e {
+        cursor: ew-resize;
+        margin-top: -3px;
+        right: -3px;
+        top: 50%
+    }
+
+    .cropper-point.point-n {
+        cursor: ns-resize;
+        left: 50%;
+        margin-left: -3px;
+        top: -3px
+    }
+
+    .cropper-point.point-w {
+        cursor: ew-resize;
+        left: -3px;
+        margin-top: -3px;
+        top: 50%
+    }
+
+    .cropper-point.point-s {
+        bottom: -3px;
+        cursor: s-resize;
+        left: 50%;
+        margin-left: -3px
+    }
+
+    .cropper-point.point-ne {
+        cursor: nesw-resize;
+        right: -3px;
+        top: -3px
+    }
+
+    .cropper-point.point-nw {
+        cursor: nwse-resize;
+        left: -3px;
+        top: -3px
+    }
+
+    .cropper-point.point-sw {
+        bottom: -3px;
+        cursor: nesw-resize;
+        left: -3px
+    }
+
+    .cropper-point.point-se {
+        bottom: -3px;
+        cursor: nwse-resize;
+        height: 20px;
+        opacity: 1;
+        right: -3px;
+        width: 20px
+    }
+
+@media (min-width:768px) {
+    .cropper-point.point-se {
+        height: 15px;
+        width: 15px
+    }
+}
+
+@media (min-width:992px) {
+    .cropper-point.point-se {
+        height: 10px;
+        width: 10px
+    }
+}
+
+@media (min-width:1200px) {
+    .cropper-point.point-se {
+        height: 5px;
+        opacity: .75;
+        width: 5px
+    }
+}
+
+.cropper-point.point-se:before {
+    background-color: #39f;
+    bottom: -50%;
+    content: " ";
+    display: block;
+    height: 200%;
+    opacity: 0;
+    position: absolute;
+    right: -50%;
+    width: 200%
+}
+
+.cropper-invisible {
+    opacity: 0
+}
+
+.cropper-bg {
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAA3NCSVQICAjb4U/gAAAABlBMVEXMzMz////TjRV2AAAACXBIWXMAAArrAAAK6wGCiw1aAAAAHHRFWHRTb2Z0d2FyZQBBZG9iZSBGaXJld29ya3MgQ1M26LyyjAAAABFJREFUCJlj+M/AgBVhF/0PAH6/D/HkDxOGAAAAAElFTkSuQmCC")
+}
+
+.cropper-hide {
+    display: block;
+    height: 0;
+    position: absolute;
+    width: 0
+}
+
+.cropper-hidden {
+    display: none !important
+}
+
+.cropper-move {
+    cursor: move
+}
+
+.cropper-crop {
+    cursor: crosshair
+}
+
+.cropper-disabled .cropper-drag-box, .cropper-disabled .cropper-face, .cropper-disabled .cropper-line, .cropper-disabled .cropper-point {
+    cursor: not-allowed
+}
+
+/*
+ .cropper-canvas{
+     transform: none!important;
+ }
+
+ .cropper-canvas, .cropper-wrap-box{
+     position: relative!important;
+ }
+
+ .cropper-container{
+     width: 100%!important;
+     height: 100%!important;
+ }
+
+ */
+
+/* Éditeur d'image */
+.icone-svg.modifier {
+    min-width: 16px;
+    height: 16px;
+}
+
+.icone-svg.modifier.sm {
+    min-width: 16px;
+    height: 16px;
+}

@@ -1,0 +1,33 @@
+﻿@page "{SystemeAutorise:int?}/{id?}/{noConfirmation}/{version?}/{ShortInstance}"
+@model FRW.PR.Extra.Pages.Form.ConfirmationModel
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = "_Layout2Colonnes";
+}
+
+@section style{
+
+}
+
+@section colonneGauche{
+    <div id="confirmation-transmission">
+        <h2 tabindex="-1" class="titre-page">@Localizer["confirmation.titrePage"]</h2>
+        <utd-avis id="avertissementSauvegarde" type="succes" titre="@Localizer["confirmation.titreMessageReussi"]">
+            <div slot="contenu">
+                @Localizer["confirmation.corpsMessageReussi", @Model.NoConfirmation]
+            </div>
+        </utd-avis>    
+        <div class="texte-supplementaire">
+            @(await Config.ObtenirValeurHtml("confirmationTransmission.texteSupplementaire"))
+        </div>
+    </div>
+}
+
+    @section scripts
+{
+    <script>
+        function effectuerDeconnexion() {
+            window.location.href = '@CultureInfoExtensions.LangueUrl/deconnexion/@Model.SystemeAutorise/@Model.TypeFormulaire/@(Model.Version ?? "0")/@Model.ShortInstance/'
+        }
+    </script>
+}

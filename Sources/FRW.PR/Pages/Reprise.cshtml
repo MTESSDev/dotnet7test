@@ -1,0 +1,216 @@
+﻿@page "{handler?}"
+@model PageRepriseModel
+
+@{
+    var textesOverrideValidations = $"textesI18n.{Model.Language}.validations";
+
+    ViewData["Title"] = Model.Title;
+    Layout = Model.Layout ?? "_NoLayout";
+}
+
+
+@section style{
+
+    <style>
+    </style>
+}
+@section colonneGauche{
+    <div v-cloak>
+        <h2 tabindex="-1" class="titre-etape-courante" v-if="'@Model.DejaTransmis' !== 'True'">{{$t("reprise.titrePage")}}</h2>
+        <h2 tabindex="-1" class="titre-etape-courante" v-if="'@Model.DejaTransmis' === 'True'">{{$t("reprise.titreDejaTransmis")}}</h2>
+        <formulate-form name="formReprise"
+                        v-if="'@Model.DejaTransmis' !== 'True'"
+                        id="formReprise"
+                        v-model="formReprise"
+                        class="no-error-summary"
+                        @@submit="submitFormReprise"
+                        @@submit-raw="submitFormRepriseRaw"
+                        :invalid-message="invalidMessage"
+                        :form-errors="formErrors"
+                        @@failed-validation="failedValidation"
+                        :errors="inputErrors">
+            <div class="texte-explicatif-champs-obligatoires d-flex justify-content-end" aria-hidden="true">
+                <span class="icone-champ-requis" aria-hidden="true">&nbsp;*</span>
+                <span>{{ $t("validations.texteReponseObligatoire") }}</span>
+            </div>
+
+            <formulate-input type="text"
+                             name="motPasseEnregistrement"
+                             :label=$t("reprise.libelleMotPasse")
+                             :help=$t("reprise.aideMotPasse")
+                             validation="bail|required|max:100,length"
+                             error-behavior="blur"
+                             help-position="before"
+                             :input-class="['form-control']"
+                             autocomplete="off"
+                             @@change="reinitialiserErreurMotPasse()">
+            </formulate-input>
+
+            <div class="zone-boutons">
+                <button type="submit" ref="btnReprise" class="utd-btn primaire">{{ $t("boutons.poursuivre") }}</button>
+            </div>
+        </formulate-form>
+        <div id="formulaireDejaTransmis" v-if="'@Model.DejaTransmis' === 'True'">
+            <p>
+                {{ $t("reprise.messageDejaTransmis") }}
+            </p>
+        </div>
+    </div>
+}
+@section scripts{
+
+    <script>
+    /* Composants vue */
+        Vue.component('Label', MtessVueFormulate.Label)
+        Vue.component('ErrorList', MtessVueFormulate.ErrorList)
+
+    //Définition de notre multilingue
+    const i18n = new VueI18n({
+        locale: '@Model.Language',
+        fallbackLocale: 'fr',
+        messages: textesI18n || {}
+    })
+
+    Vue.use(
+        VueFormulate, {
+            plugins: [this.VueFormulateI18n.fr],
+            classes: {
+                error: ['text-danger', 'field-validation-error'],
+                help: ['precision']
+            },
+            slotComponents: {
+                label: 'Label',
+                errorList: 'ErrorList'
+            },
+            locale: '@Model.Language',
+            validationNameStrategy: ['validationName', 'label', 'name', 'type'],
+            locales: {
+                fr: @textesOverrideValidations,
+                en: @textesOverrideValidations
+            }
+        });
+
+    Vue.use(VueI18n);
+
+    const App = {
+        el: '#frw',
+        i18n: i18n,
+        methods: {
+            submitFormReprise() {
+                this.validerReprise()
+            },
+            validerReprise(){
+                const appVue = this;
+                const cle = obtenirValeurParametreUrl('cle')
+                const noPublicSession = obtenirValeurParametreUrl('no')
+	            const parametres = {
+		            noPublicSession: noPublicSession,
+		            cle: cle,
+		            motPasse: this.formReprise.motPasseEnregistrement
+	            };
+
+	            executerRequeteAjax("@Url.Page("Reprise", "ValiderReprise")", parametres)
+		            .done((retour) => {
+                        if (retour.estValide) {
+                            window.location.href = `@CultureInfoExtensions.LangueUrl/form/@Model.SystemeAutorise/@Model.TypeFormulaire/@Model.Version/${retour.fpk}`;
+			            } else {
+                            //Erreur de mot de passe, on ajoute l'erreur et on donne le focus au champ mot de passe.
+				            appVue.$formulate.handle({
+                                inputErrors: { motPasseEnregistrement: i18n.t("validations.motPasseInvalide") },
+                            }, 'formReprise');
+
+                            const champMotPasse = document.getElementsByName('motPasseEnregistrement')
+                            if (champMotPasse.length) {
+                                champMotPasse[0].focus()
+                            }
+
+				            utd.traitementEnCours.terminer(this.$refs.btnReprise);
+			            }
+		            })
+		            .fail(() => {
+			            appVue.afficherErreurTechnique();
+                        utd.traitementEnCours.terminer(this.$refs.btnReprise);
+		            });
+            },
+            submitFormRepriseRaw() {
+                utd.traitementEnCours.debuter(this.$refs.btnReprise);
+
+                setTimeout(function (formulate) {
+                    const form = formulate.$formulate.registry.get("formReprise")
+                    if (form.hasErrors) {
+                        utd.traitementEnCours.terminer(formulate.$refs.btnReprise);
+                    }
+                }, 0, this)
+            },
+            reinitialiserErreurMotPasse() {
+                this.$formulate.handle({
+                    inputErrors: { motPasseEnregistrement: null },
+                }, 'formReprise');
+            },
+            invalidMessage(fields) {
+                const listeErreurs = []
+                const nomChamps = Object.keys(fields)
+
+                nomChamps.forEach(nomChamp => {
+                    const champ = fields[nomChamp]
+
+                    if (champ.hasErrors) {
+                        if (champ.context && champ.context.type !== 'group') {
+                            this.ajouterErreursChamp(champ, listeErreurs)
+                        } else {
+                            //this.ajouterErreursGroupe(champ, listeErreurs, true)
+                        }
+                    }
+                })
+
+                return listeErreurs.length > 0 ? JSON.stringify(listeErreurs) : false
+            },
+            ajouterErreursChamp(champ, listeErreurs) {
+                champ.formShouldShowErrors = true               
+                const name = champ.context.id
+
+                champ.context.validationErrors.forEach(message => {
+                    listeErreurs.push({ name: name, message: message })
+                })
+            },
+            failedValidation(data) {
+                this.$el.setAttribute('data-submit', true)
+            },
+            donnerFocusControle(nomControle) {
+                const controles = document.getElementsByName(nomControle)
+                if (controles.length) {
+                        controles[0].focus()
+                }
+            },
+            afficherErreurTechnique() {
+                //TODO log erreur avec api/log + Regrouper ces fonctions dans un import vue afin de réutiliser au lieu de copier aussi dans reprise
+                const parametres = {
+                    type: "erreur",
+                    titre: i18n.t("messages.erreurTechnique.titre"),
+                    corps: i18n.t("messages.erreurTechnique.corps"),
+                    texteBoutonFermer: i18n.t("boutons.fermer"),
+                    texteBoutonPrimaire: i18n.t("boutons.fermer")
+                }
+
+                afficherMessage(parametres)
+            }
+        },
+        data: function () {
+            const donnees = {}
+            donnees.formErrors = []
+            donnees.inputErrors = {}
+            donnees.formReprise = {}
+            return donnees;
+        }
+    }
+
+    window.addEventListener('load', () => {
+        new Vue(App);
+    })
+
+    function effectuerDeconnexion() {
+        window.location.href = `@CultureInfoExtensions.LangueUrl/deconnexion/@Model.SystemeAutorise/@Model.TypeFormulaire/@(Model.Version ?? "0")/@Model.ShortInstance`
+    }
+
+    </script>
+}

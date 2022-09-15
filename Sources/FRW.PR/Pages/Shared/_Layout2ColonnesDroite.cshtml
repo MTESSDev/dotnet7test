@@ -1,0 +1,29 @@
+﻿
+@{
+    Layout = "_Layout.cshtml";
+}
+
+@******** Layout 2 colonnes - Contenu principal à droite ********@
+
+@section style{
+    @RenderSection("style", required: false)
+}
+
+
+@RenderBody()
+
+<div id="conteneur2Colonnes" class="utd contenu-principal-droite">
+    <div id="colonneGauche" class="utd">
+        @RenderSection("colonneGauche", required: false)
+    </div>
+
+    <div id="colonneDroite" class="utd">
+        @RenderSection("colonneDroite", required: false)
+    </div>
+</div>
+
+@section scripts{
+    @RenderSection("scripts", required: false)
+}
+
+

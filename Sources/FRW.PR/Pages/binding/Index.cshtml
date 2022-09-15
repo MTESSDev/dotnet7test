@@ -1,0 +1,725 @@
+﻿@page "{SystemeAutorise:int}/{TypeFormulaire}/{gabarit?}"
+@model BindingIndexModel
+
+@{
+    Layout = "_NoLayout";
+    ViewData["Title"] = "FRW.PDFBinder";
+}
+
+@{
+    // here we do the serialization of our dictionary into JSON using Newtonsoft.Json package
+    // this object will be used in our Vue application
+
+    // over the years of web development, I've found out that the following
+    // serialization solves the problems I've encountered so far
+
+    // in a real app this would be created as a helper method somewhere
+    // if we want to exclude the c# code from our view
+    var serializationSettings = new Newtonsoft.Json.JsonSerializerSettings()
+    {
+        StringEscapeHandling = Newtonsoft.Json.StringEscapeHandling.EscapeHtml
+    };
+
+    var data =
+        Html.Raw(
+             System.Web.HttpUtility.JavaScriptStringEncode(
+                  Newtonsoft.Json.JsonConvert.SerializeObject(
+                    Model.VueData, Newtonsoft.Json.Formatting.None, serializationSettings
+                ),
+             false)
+        );
+}
+
+@section style{
+    <link rel="stylesheet" href="~/css/additionnel.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="/css/pdf/pdf_viewer.css">
+
+    <script type="text/x-template" id="select2-template">
+        <select class="form-control form-group">
+            <slot></slot>
+        </select>
+    </script>
+
+    <style>
+        /* Espacement checkbox inline */
+        .custom-checkbox.lg.d-inline-block .custom-control-label::before, .custom-radio.lg .custom-control-label::before {
+            left: -1.75rem
+        }
+
+        .custom-checkbox.lg.d-inline-block .custom-control-label::after, .custom-radio.lg .custom-control-label::after {
+            left: -1.75rem
+        }
+
+        .required-field-icon {
+            display: none;
+        }
+
+        .select2-container--open {
+            z-index: 9999999
+        }
+
+        /* basic positioning */
+        .legend {
+            list-style: none;
+        }
+
+            .legend li {
+                float: left;
+                margin-right: 10px;
+            }
+
+            .legend span {
+                border: 1px solid #ccc;
+                float: left;
+                width: 12px;
+                height: 12px;
+                margin: 2px;
+            }
+            /* your colors */
+            .legend .green {
+                background-color: green;
+            }
+
+            .legend .gold {
+                background-color: gold;
+            }
+
+            .legend .red {
+                background-color: red;
+            }
+    </style>
+}
+
+
+<!-- app -->
+<div id="app">
+
+    <utd-dialog ref="modalComponent" :titre="selectedField.title" idfocus="btnEnregistrer" :afficher="selectedField !='' ? 'true' : 'false'" @@fermeture="apresFermetureModale">
+        <div slot="contenu">
+            <div v-if="selectedField != ''">
+                <label class="form-group">Champ du PDF <input type="text" class="form-control d-inline-block w-auto" readonly disabled :value="selectedField.pdfId" /></label>
+                <div class="card section-secondaire">
+                    <div class="card-title">
+                        <h2>Assignation source</h2>
+                    </div>
+                    <div class="card-body">
+                        <label for="select2groups">
+                            Filtre section
+                        </label>
+                        <select2groups id="select2groups" class="form-control form-group" :options="optionsGroups" v-model="selectedGroup">
+                            <option value="0">Toutes</option>
+                        </select2groups>
+
+                        <label for="select2fields">
+                            Champ(s) et valeur(s) ({{optionsFields.length}})
+                        </label>
+                        <div class="custom-control custom-checkbox lg d-inline-block ml-4 mt-8">
+                            <input id="afficherValeursAssignees" type="checkbox" v-model="showAll" class="custom-control-input" />
+                            <label class="custom-control-label" for="afficherValeursAssignees">Afficher même les valeurs assignées</label>
+                        </div>
+
+                        <select2fields id="select2fields" class="form-control form-group" multiple :options="optionsFields" v-model="selectedFieldsTemp">
+                            <option disabled value="0">Choisir</option>
+                        </select2fields>
+                        <pre class="mb-0">{{selectedFieldsTemp}}</pre>
+                        <div class="form-group mt-32">
+                            <span class="label">Formules rapides</span>
+                            <ul class="mt-8">
+                                <li>Date: <a style="cursor: pointer;" @@click="rapide('dateShort')">yyyyMMdd</a> | <a style="cursor: pointer;" @@click="rapide('dateShortTiret')">yyyy-MM-dd</a></li>
+                                <li><a style="cursor: pointer;" @@click="rapide('exclude')">Ne contient pas/ne vaut pas</a></li>
+                                <li>Nombre: <a style="cursor: pointer;" @@click="rapide('forceNumeric')">Chiffres seulement</a> | <a style="cursor: pointer;" @@click="rapide('forceNumeric_entier')">Entier</a> | <a style="cursor: pointer;" @@click="rapide('forceNumeric_decimales')">Decimales</a></li>
+                            </ul>
+                        </div>
+                        <div class="form-group">
+                            <label for="formule">Formule (optionnel)</label>
+                            <span class="precision">Voir la doc de SmartFormat.</span>
+                            <textarea id="formule" class="form-control" type="text" rows="2" v-model="selectedFormula"></textarea>
+                        </div>
+
+                        <label for="formuleAnglaise">Formule Anglaise (optionnel)</label>
+                        <span class="precision">Voir la doc de SmartFormat.</span>
+                        <textarea id="formuleAnglaise" class="form-control" type="text" rows="2" v-model="selectedFormulaAnglaise"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div slot="pied">
+            <button class="utd-btn secondaire compact" @@click="this.$refs.modalComponent.setAttribute('afficher', false)">
+                Annuler
+            </button>
+            <button class="utd-btn primaire compact" @@click="save">
+                Enregistrer
+            </button>
+        </div>
+    </utd-dialog>
+
+    <div style="padding: 0px; border: 1px dotted darkgrey; width: 100%">
+        <div id="dl" class="m-2">
+            @{
+                var nomDl = @Model.TypeFormulaire + ".vX.bind.yml";
+            }
+
+            <a id="downloadYaml" download="@nomDl"
+               href="">
+                Sauvegarder le fichier YAML
+            </a>
+        </div>
+        <div id="gabarits">
+            <ul>
+                <li is="templates-item"
+                    style="display: inline;"
+                    v-for="(template, index) in templates"
+                    v-bind:key="template.Id"
+                    v-bind:id="template.Id"
+                    v-bind:title="template.Name"
+                    v-on:remove="templates.splice(index, 1)"></li>
+            </ul>
+        </div>
+        <div class="m-2">
+            @{
+                var routeData = new Dictionary<string, string>();
+                //Sert à retourner dans la même page dans la langue alternative.
+                foreach (var r in ViewContext.RouteData.Values)
+                {
+                    routeData.Add(r.Key, r.Value.ToString() ?? string.Empty);
+                }
+
+                //Ajout des paramètres dans le query string
+                foreach (var r in Request.Query)
+                {
+                    routeData.Add(r.Key, r.Value.ToString() ?? string.Empty);
+                }
+
+                var labelLangue = "française";
+
+                if (CultureInfoExtensions.EstSiteFrancais)
+                {
+                    routeData["culture"] = "en";
+                    labelLangue = "anglaise";
+
+                }
+                else
+                {
+                    routeData["culture"] = "fr";
+                }
+            }
+            <a asp-all-route-data="@routeData" id="changementLangue">
+                Voir les pdf en version @labelLangue.
+            </a>
+        </div>
+
+        <div v-if="logs.length > 0" id="log-list" class="m-5">
+            <h3>
+                La configuration contient des erreurs
+            </h3>
+            <div>
+                <ul>
+                    <li is="log-item"
+                        v-for="(log, index) in logs"
+                        v-bind:vdelete="log.vdelete"
+                        v-bind:key="log.id"
+                        v-bind:title="log.title"
+                        v-on:remove="removeLog(log.id)"></li>
+                </ul>
+            </div>
+            <hr />
+        </div>
+
+        <div style="width: 100%; text-align: center;">
+            <ul class="legend">
+                <li><span class="green"></span> Champ assigné</li>
+                <li><span class="gold"></span> Champ non-assigné</li>
+                <li><span class="red"></span> Champ assigné à une source inexistante</li>
+            </ul>
+        </div>
+        <center>
+            <div style="padding: 4px; background: lavender; border: 1px solid black; display: inline-block;">
+                <form id="form1" novalidate ref="container">
+                    <div style="border: 1px dashed darkviolet;" id="pdfTarget"></div>
+                </form>
+            </div>
+        </center>
+    </div>
+</div>
+
+
+@section scripts{
+
+
+    <script src="~/js/additionnel.min.js" asp-append-version="true"></script>
+    <script src="/scripts/pdf/pdf_viewer.js"></script>
+
+    <script>
+
+        definirParametresDefautSelect2();
+
+        window.onload = function () {
+
+            pdfjsLib.GlobalWorkerOptions.workerSrc = '/scripts/pdf/pdf.worker.js';
+
+            chargerPdf('/binding/GetGabarit/@Model.SystemeAutorise/@Model.TypeFormulaire?fichier=@Model.Pdf');
+        }
+
+        function definirParametresDefautSelect2() {
+            if ($.fn.select2 != undefined) {
+                $.fn.select2.defaults.set("theme", "bootstrap4");
+                $.fn.select2.defaults.set("language", $('html').attr('lang') || 'fr');
+            }
+        };
+
+        function chargerPdf(pdf) {
+
+            var DEFAULT_SCALE = 1.0;
+
+            var container = document.getElementById('pdfTarget');
+
+            container.innerHTML = "";
+
+            var values = {};
+            var nbPageGenere = 0;
+
+            // Fetch the PDF document from the URL using promises.
+            var loadingTask = pdfjsLib.getDocument(pdf);
+
+            loadingTask.promise.then(function (doc) {
+
+                for (var i = 1; i <= doc.numPages; i++) {
+
+                    var promise = doc.getPage(i).then(function (pdfPage) {
+
+                        pdfjsViewer.FormFunctionality.setPostRenderHook(function () {
+                            nbPageGenere++
+                            if (doc.numPages == nbPageGenere) {
+                                app.majChamps();
+                                app.checkOrphelins();
+                                app.majYaml();
+                            }
+                        });
+
+                        pdfjsViewer.FormFunctionality.setPostCreationTweak(function (fieldType, elementId, element) {
+
+                            var key = element.id;
+
+                            if (!app.isCssIdValid(key)) {
+                                app.logs.push({ id: key, title: "'" + key + "' est un ID invalide dans le PDF chargé (ID pdf: '" + app.gabaritEnCours + "').", vdelete: false })
+                            }
+
+                            element.readOnly = true;
+                            element.setAttribute('data-isPdf', true);
+                            element.onclick = function (e) {
+                                app.sendInfo(e.target, fieldType);
+                                e.preventDefault();
+                            };
+                        });
+                        return pdfjsViewer.FormFunctionality.render(1094, null, pdfPage, container, values,
+                            {
+                                interactiveForms: true,
+                                hideForms: false
+                            });
+                    });
+                }
+            });
+        }
+
+    </script>
+
+    <script>
+
+        Vue.component('log-item', {
+            template: '\
+                <li>\
+                  {{ title }}\
+                  <button v-if="vdelete" v-on:click="$emit(\'remove\')" class="utd-btn secondaire">Supprimer</button>\
+                </li>\
+                    ',
+            props: ['title', 'vdelete']
+                    })
+
+        Vue.component('templates-item', {
+            parent: app,
+            template: '\
+                <li>\
+                  <button :class="getClass" v-on:click="redirectTo(id)">{{ title }}</button>\
+                </li>\
+              ',
+            computed: {
+                getClass: function () {
+                    if (this.id === this.$parent.$data.gabaritEnCours) {
+                        return "utd-btn primaire"
+                    } else {
+                        return "utd-btn secondaire"
+                    }
+                }
+            },
+            methods: {
+                redirectTo: function (id) {
+                    window.location.href =  "/@CultureInfoExtensions.LangueUtilisateur/binding/@Model.SystemeAutorise/@Model.TypeFormulaire/" + id;
+                },
+            },
+            props: ['title', 'id']
+        });
+
+        /*var customInput =  Vue.component('custom-input', {
+              props: ['value','style'],
+              template: `
+                  <input
+                    v-bind:value="value"
+                    :class="style"
+                    v-on:input="$emit('input', $event.target.value)"
+                  >
+                `
+          })*/
+
+        Vue.component("select2groups", {
+            props: ["options", "value"],
+            template: "#select2-template",
+            mounted: function () {
+                var vm = this;
+                $(this.$el)
+                    // init select2
+                    .select2({ data: this.options, selectOnClose: true, width: 'auto' })
+                    .val(this.value)
+                    .trigger("change")
+                    // emit event on change.
+                    .on("change", function () {
+                        vm.$emit("input", this.value);
+                    });
+            },
+            watch: {
+                value: function (value) {
+                    // update value
+                    $(this.$el)
+                        .val(value)
+                        .trigger("change");
+                },
+                options: function (options) {
+                    // update options
+                    $(this.$el)
+                        .empty()
+                        .select2({ data: options, seIdcIdtOnClose: true });
+                }
+            },
+            destroyed: function () {
+                $(this.$el)
+                    .off()
+                    .select2("destroy");
+            }
+        });
+
+        Vue.component("select2fields", {
+            props: ["options", "value"],
+            template: "#select2-template",
+            mounted: function () {
+                var vm = this;
+                $(this.$el)
+                    // init select2
+                    .select2({ data: this.options, selectOnClose: true, maximumSelectionLength: -1, width: 'auto'})
+                    .val(this.value)
+                    .trigger("change")
+                    // emit event on change.
+                    .on("change", function () {
+                        vm.$emit("input", $(this).val());
+                    }).on('select2:unselecting', function () {
+                        $(this).data('unselecting', true);
+                    }).on('select2:opening', function (e) {
+                        if ($(this).data('unselecting')) {
+                            $(this).removeData('unselecting');
+                            e.preventDefault();
+                        }
+                    });
+            },
+            watch: {
+                value: function (value) {
+                    // update value
+                    $(this.$el).val(value);
+                    //.trigger("change");
+                },
+                options: function (options) {
+                    // update options
+                    var bckVal = this.value;
+                    //debugger;
+                    $(this.$el)
+                        .empty()
+                        .select2({ data: options, selectOnClose: true, maximumSelectionLength: -1 })
+                        .val(bckVal)
+                        .trigger("change");
+
+                 }
+            },
+            destroyed: function () {
+                $(this.$el)
+                    .off()
+                    .select2("destroy");
+            }
+        });
+
+        // start app
+        var app = new Vue({
+            el: "#app",
+            /*data: {
+                formKey: { test: 0 },
+                selectedField: '',
+                selectedGroup: 0,
+                selectedFields: [],
+                optionsGroups: [{ id: 1, text: "Hello" }, { id: 2, text: "World" }],
+            },*/
+            data: function () {
+                let donnees = JSON.parse('@data')
+                donnees.selectedField = '';
+                donnees.selectedFields = '';
+                donnees.selectedFieldsTemp = '';
+                donnees.selectedGroup = '';
+                donnees.selectedFormula = '';
+                donnees.selectedFormulaAnglaise = '';
+                donnees.fichierYaml = '';
+                donnees.showAll = false;
+                donnees.logs = [];
+                return donnees;
+            },
+
+            computed: {
+                all: function () {
+                    var sall = [];
+                    for (var i = 0; i < this.optionsGroups.length; i++) {
+                        var group = this.allOptionsFields[this.optionsGroups[i]];
+                        for (var j = 0; j < group.length; j++) {
+                            sall.push(group[j]);
+                        }
+                    }
+                    return sall;
+                },
+                onlyBinded: function () {
+                    var sall = [];
+
+                    //On boucle tous les gabarits
+                    Object.entries(app.bind).forEach(gabarit => {
+                        const [id, content] = gabarit;
+
+                        //Ensuite toutes les valeurs deja assignées une fois
+                        Object.entries(content).forEach(entry => {
+                            const [key, value] = entry;
+
+                            for (var i = 0; i < value.Champs.length; i++) {
+                                if (!value.Champs[i].startsWith("<")) {
+
+                                    cleanVal = value.Champs[i].split("==");
+                                    if (cleanVal.length == 2 && !sall.includes(cleanVal[0])) {
+                                        sall.push(cleanVal[0]);
+                                    }
+                                    sall.push(value.Champs[i]);
+                                }
+                            }
+                        });
+                    });
+
+
+                    return sall;
+                },
+                bindActuel: function () {
+                    return this.bind[this.gabaritEnCours];
+                },
+                optionsFields: function () {
+                    var toReturn = [];
+
+                    if (this.selectedGroup == "0") {
+                        toReturn = this.all;
+                    } else {
+                        toReturn = this.allOptionsFields[this.selectedGroup];
+                    }
+                    if (!this.showAll) {
+                        toReturn = toReturn.filter(function (el) {
+                            return app.selectedFields.includes(el) || !app.onlyBinded.includes(el);
+                        });
+
+                    }
+
+                    return toReturn;
+                    //return [{
+                    //            "id": 1,
+                    //            "text": "Option 1.1"
+                    //        },
+                    //        {
+                    //            "id": 2,
+                    //            "text": "Option 1." + Date.now()
+                    //        }
+                    //    ];
+                }
+            },
+            watch: {
+                /*bindActuel: function (val, oldVal) {
+                    this.majChamps();
+                }*/
+            },
+            methods: {
+                apresFermetureModale() {
+                    this.selectedField = '';
+                },
+                save() {
+                    var data = null;
+
+                    if (this.selectedFieldsTemp.length !== 0) {
+                        if (this.selectedFormula === "") {
+                            this.selectedFormula = undefined;
+                        }
+                        if (this.selectedFormulaAnglaise === "") {
+                            this.selectedFormulaAnglaise = undefined;
+                        }
+
+                        var data = { Champs: this.selectedFieldsTemp, Formule: this.selectedFormula, FormuleAnglaise: this.selectedFormulaAnglaise };
+                        this.$set(this.bindActuel, this.selectedField.pdfId, data)
+                    } else {
+                        this.$delete(this.bindActuel, this.selectedField.pdfId)
+                    }
+
+                    if (this.selectedFields != this.selectedFieldsTemp) {
+                        this.selectedFields = this.selectedFieldsTemp;
+                        this.majChamps();
+                    }
+
+                    this.majYaml();
+
+                    this.$refs.modalComponent.setAttribute('afficher', false);
+                },
+                rapide(val) {
+                    var ajout = "";
+                    var champ = this.selectedFieldsTemp[0];
+                    var champValeur = champ.split("==");
+
+                    switch (val) {
+                        case "dateShort":
+                            ajout = `{${champValeur[0]}:yyyyMMdd}`;
+                            break;
+                        case "dateShortTiret":
+                            ajout = `{${champValeur[0]}:yyyy-MM-dd}`;
+                            break;
+                        case "exclude":
+                            ajout = `{${champValeur[0]}:exclude(${champValeur[1]}):true}`;
+                            break;
+                        case "forceNumeric":
+                            ajout = `{${champValeur[0]}:forcerNombre()}`;
+                            break;
+                        case "forceNumeric_entier":
+                            ajout = `{${champValeur[0]}:forcerNombre(entier)}`;
+                            break;
+                        case "forceNumeric_decimales":
+                            ajout = `{${champValeur[0]}:forcerNombre(decimales)}`;
+                            break;
+                        default:
+                    }
+                    if (!this.selectedFormula) { this.selectedFormula = ""; }
+                    this.selectedFormula = this.selectedFormula + ajout;
+                    if (!this.selectedFormulaAnglaise) { this.selectedFormulaAnglaise = ""; }
+                    this.selectedFormulaAnglaise = this.selectedFormulaAnglaise + ajout;
+                },
+                checkOrphelins() {
+                    for (const [key, value] of Object.entries(this.bindActuel)) {
+                        if (!this.isCssIdValid(key)) {
+                            this.logs.push({ id: key, title: "'" + key + "' est un ID invalide dans la config pour le pdf ID: '" + this.gabaritEnCours + "'.", vdelete: true })
+                            continue
+                        }
+
+                        if ($("#" + key).length == 0) {
+                            this.logs.push({ id: key, title: "'" + key + "' est orphelin.", vdelete: true})
+                        }
+                    }
+                },
+                removeLog(key) {
+                    this.$delete(this.bindActuel, key)
+                    this.majYaml()
+                },
+                containsAny(str, substrings) {
+                    for(var i = 0; i != substrings.length; i++) {
+                        var substring = substrings[i];
+                        if (str.indexOf(substring) != - 1) {
+                            return substring;
+                        }
+                    }
+                    return null;
+                },
+                isCssIdValid(id) {
+                    re = /^[A-Za-z]+[\w\-\:\.]*$/
+                    return re.test(id)
+                },
+                majYaml() {
+                    axios
+                        .post('/binding/save/@Model.SystemeAutorise/@Model.TypeFormulaire/' + this.gabaritEnCours, this.bindActuel)
+                        .then(response => {
+                            this.fichierYaml = response.data;
+                            //data:text/plain;base64,
+                            document.getElementById("downloadYaml").href = "data:text/plain;charset=utf-8;base64," + this.base64Encode(response.data);
+                        })
+                        .catch(function (error) {
+                            // handle error
+                            console.log(error);
+                        })
+                },
+                base64Encode(stringInput) {
+
+                    // NOTE: This normalization technique for handling characters that require
+                    // more than an 8-bit representation was provided on the Mozilla Developer
+                    // Network website for Base64 encoding. They also provided a companion DECODE
+                    // method. But, we don't need to decode in this demo.
+                    // --
+                    // READ MORE: https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
+                    var normalizedInput = encodeURIComponent(stringInput).replace(
+                        /%([0-9A-F]{2})/g,
+                        function toSolidBytes($0, hex) {
+
+                            return (String.fromCharCode("0x" + hex));
+
+                        }
+                    );
+
+                    return (btoa(normalizedInput));
+                },
+                majChamps() {
+                    var listeInput = $("input[data-isPdf='true'], textarea[data-isPdf='true']");
+
+                    var sall = this.all;
+
+                    for (var i = 0; i < listeInput.length; i++) {
+                        if (typeof this.bind !== 'undefined'
+                            && typeof this.bindActuel !== 'undefined'
+                            && typeof this.bindActuel[listeInput[i].name] !== 'undefined') {
+
+                            var nbFound = 0;
+
+                            for (var j = 0; j < this.bindActuel[listeInput[i].name].Champs.length; j++) {
+
+                                for (var k = 0; k < sall.length; k++) {
+                                    if (sall[k] == this.bindActuel[listeInput[i].name].Champs[j]) {
+                                        nbFound++;
+                                    }
+                                }
+
+                            }
+
+                            if (nbFound !== 0 && nbFound == this.bindActuel[listeInput[i].name].Champs.length) {
+                                listeInput[i].style.backgroundColor = 'green';
+                            } else {
+                                listeInput[i].style.backgroundColor = 'red';
+                            }
+
+                        } else {
+                            listeInput[i].style.backgroundColor = 'gold';
+                        }
+                    }
+                },
+                sendInfo(pdfElement, fieldType) {
+                    //debugger;
+                    //$('#'+pdfId)[0].style.backgroundColor = "blue";
+                    this.selectedField = { "title": pdfElement.title, "pdfId": pdfElement.name };
+                    if (this.selectedGroup == '') {
+                        this.selectedGroup = '0';
+                    }
+                    this.selectedFieldsTemp = (typeof this.bindActuel[pdfElement.name] !== 'undefined') ? this.bindActuel[pdfElement.name].Champs : [];
+                    this.selectedFormula = (typeof this.bindActuel[pdfElement.name] !== 'undefined') ? this.bindActuel[pdfElement.name].Formule : undefined;
+                    this.selectedFormulaAnglaise = (typeof this.bindActuel[pdfElement.name] !== 'undefined') ? this.bindActuel[pdfElement.name].FormuleAnglaise : undefined;
+
+                    this.selectedFields = this.selectedFieldsTemp;
+                }
+            }
+        });
+    </script>
+}
+
