@@ -57,7 +57,7 @@ namespace FRW.PR.Extra.Pages
 
             Response.Cookies.Append("PageConfigSystemeCourant", SystemeAutorise.ToString()!);
 
-            FormListItems = await CreerListeFormulaires();
+            //FormListItems = await CreerListeFormulaires();
 
             return Page();
         }
