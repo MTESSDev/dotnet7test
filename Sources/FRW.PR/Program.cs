@@ -24,7 +24,6 @@ namespace FRW.PR.Extra
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                })
-                .UseFrwLog(LoggingLevelSwitch, true);
+                });
     }
 }
