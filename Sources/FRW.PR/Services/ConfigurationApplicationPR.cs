@@ -47,6 +47,8 @@ namespace FRW.PR.Extra.Services
 
         public override async Task ObtenirConfigurationApplication()
         {
+            return;
+
             if (!string.IsNullOrWhiteSpace(TypeFormulaire))
                 ConfigurationFormulaire = await _formulairesService.ObtenirContenuFichierConfiguration(SystemeAutorise, TypeFormulaire, Version, NiveauConfig.FORMULAIRE);
 
