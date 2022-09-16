@@ -27,7 +27,7 @@ jobs:
    # - name: Test
     #  run: dotnet test --no-build --verbosity normal ./FRW.PR/FRW.PR.Extranet.csproj
     - name: Publish
-      run: dotnet publish --os linux --arch x64 -p:PublishProfile=DefaultContainer ./FRW.PR/FRW.PR.Extranet.csproj
+      run: dotnet publish --os linux --arch x64 -p:PublishProfile=DefaultContainer
     - name: Remove docker
       run: docker rm -f demo-docker || true 
     - name: Run
