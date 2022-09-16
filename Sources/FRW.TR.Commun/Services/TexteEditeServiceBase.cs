@@ -60,9 +60,11 @@ namespace FRW.TR.Commun.Services
 
         public async Task<string?> ObtenirValeurAsync(string langue, string identifiant, TexteEditeQuery? texteEditeQuery)
         {
-            var textes = await ObtenirValeursAsync(langue, texteEditeQuery);
+            //var textes = await ObtenirValeursAsync(langue, texteEditeQuery);
 
-            return ObtenirValeurAsync(textes, langue, identifiant, texteEditeQuery);
+            //return ObtenirValeurAsync(textes, langue, identifiant, texteEditeQuery);
+
+            return identifiant;
         }
 
         private string? ObtenirValeurAsync(IDictionary<string, object>? textes, string langue, string identifiant, TexteEditeQuery? texteEditeQuery)
